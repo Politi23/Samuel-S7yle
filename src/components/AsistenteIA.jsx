@@ -81,7 +81,7 @@ ${citas.filter(c=>c.fecha>=lunesStr&&c.fecha<=domingoStr).length > 0
 ${resumenMensual || 'Sin datos'}
 
 === TODOS LOS CLIENTES (${clientes.length}) ===
-${clientes.map(c=>`- ${c.nombre} ${c.apellido} | ${c.cedula||'sin cédula'} | ${c.telefono||'sin teléfono'} | Registrado: ${c.created_at ? c.created_at.split('T')[0] : 'desconocido'}`).join('\n')}
+${clientes.map(c=>`- ${c.nombre} ${c.apellido} | ${c.telefono||'sin teléfono'} | Registrado: ${c.created_at ? c.created_at.split('T')[0] : 'desconocido'}`).join('\n')}
 
 === TODOS LOS INGRESOS (${ingresos.length}) ===
 ${[...ingresos].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(i=>`- ${i.fecha}: ${i.cliente_nombre} | ${i.concepto} | ${i.moneda==='USD'?'$':'Bs.'}${Number(i.monto).toFixed(2)} | ${i.metodo_pago}${i.tasa_bcv?' | Tasa:'+i.tasa_bcv:''}${i.notas?' | Nota:'+i.notas:''}`).join('\n')}

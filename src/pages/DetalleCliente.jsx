@@ -106,12 +106,12 @@ export default function DetalleCliente() {
           <div className="w-20 h-20 rounded-full flex items-center justify-center"
                style={{background:'rgba(217,119,6,0.20)', border:'1px solid rgba(217,119,6,0.40)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.30)'}}>
             <span className="text-amber-300 text-2xl font-bold">
-              {(cliente.nombre||' ')[0]}{(cliente.apellido||' ')[0]}
+              {(cliente.nombre||' ')[0].toUpperCase()}{(cliente.apellido||' ')[0].toUpperCase()}
             </span>
           </div>
           <div className="text-center">
             <h2 className="text-white text-lg font-bold">{cliente.nombre} {cliente.apellido}</h2>
-            {cliente.cedula && <p className="text-white/50 text-sm">{cliente.cedula}</p>}
+
             {cliente.telefono && (
               <div className="flex items-center justify-center gap-3 mt-2">
                 <a href={`https://wa.me/${cliente.telefono.replace(/\D/g, '').replace(/^0/, '58')}`}

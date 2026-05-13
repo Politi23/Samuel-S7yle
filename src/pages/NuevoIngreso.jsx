@@ -81,7 +81,7 @@ export default function NuevoIngreso() {
   const seleccionar = (c) => { setForm(prev => ({ ...prev, cliente_id: c.id, cliente_nombre: `${c.nombre} ${c.apellido}` })); setMostrarBuscador(false); setBusqueda('') }
   const recientes = clientes.slice(0, 5)
   const filtrados = busqueda.trim()
-    ? clientes.filter(c => { const q = busqueda.toLowerCase(); return c.nombre.toLowerCase().includes(q) || c.apellido.toLowerCase().includes(q) || (c.cedula||'').includes(q) }).slice(0, 8)
+    ? clientes.filter(c => { const q = busqueda.toLowerCase(); return c.nombre.toLowerCase().includes(q) || c.apellido.toLowerCase().includes(q) || (c.telefono||'').includes(q) }).slice(0, 8)
     : recientes
 
   const tasaEur = bcv?.eur ?? null
@@ -171,11 +171,11 @@ export default function NuevoIngreso() {
                   {filtrados.map(c => (
                     <button key={c.id} onClick={() => seleccionar(c)} className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 active:bg-white/10 text-left" style={{background:'rgba(255,255,255,0.06)'}}>
                       <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(217,119,6,0.20)'}}>
-                        <span className="text-amber-300 font-bold text-xs">{c.nombre[0]}{c.apellido[0]}</span>
+                        <span className="text-amber-300 font-bold text-xs">{c.nombre[0].toUpperCase()}{c.apellido[0].toUpperCase()}</span>
                       </div>
                       <div>
                         <p className="text-white text-sm font-semibold">{c.nombre} {c.apellido}</p>
-                        {c.cedula && <p className="text-white/40 text-xs">{c.cedula}</p>}
+                        {c.telefono && <p className="text-white/40 text-xs">{c.telefono}</p>}
                       </div>
                     </button>
                   ))}

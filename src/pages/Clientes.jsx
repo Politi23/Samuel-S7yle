@@ -14,7 +14,6 @@ export default function Clientes() {
     return (
       (c.nombre||'').toLowerCase().includes(q) ||
       (c.apellido||'').toLowerCase().includes(q) ||
-      (c.cedula||'').toLowerCase().includes(q) ||
       (c.telefono && c.telefono.includes(q))
     )
   })
@@ -61,12 +60,11 @@ export default function Clientes() {
                   className="w-full glass-card flex items-center gap-3 active:bg-white/15 transition-colors text-left">
             <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
                  style={{background:'rgba(217,119,6,0.20)', border:'1px solid rgba(217,119,6,0.35)'}}>
-              <span className="text-amber-300 font-bold text-sm">{(c.nombre||' ')[0]}{(c.apellido||' ')[0]}</span>
+              <span className="text-amber-300 font-bold text-sm">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white font-semibold truncate">{c.nombre} {c.apellido}</p>
-              {c.cedula && <p className="text-white/50 text-sm">{c.cedula}</p>}
-              {c.telefono && <p className="text-white/35 text-xs">{c.telefono}</p>}
+              {c.telefono && <p className="text-white/50 text-sm">{c.telefono}</p>}
             </div>
             <ChevronRight size={17} className="text-white/25 flex-shrink-0" />
           </button>

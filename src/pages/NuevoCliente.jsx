@@ -13,7 +13,7 @@ const PREFIJOS = [
   { valor: '0424', label: '0424 · Movistar' },
   { valor: '0426', label: '0426 · Movistar' },
 ]
-const FORM_INICIAL = { nombre: '', apellido: '', cedula_tipo: 'V', cedula_num: '', tel_prefijo: '0414', tel_num: '' }
+const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '' }
 const DRAFT_KEY = 'draft_nuevo_cliente'
 
 function validarNombre(v) {
@@ -59,11 +59,10 @@ export default function NuevoCliente() {
     if (esEdicion) {
       const c = clientes.find(c => c.id === id)
       if (c) {
-        const [tipo, num] = c.cedula?.split('-') || ['V', '']
         const tel = c.telefono || ''
         const prefijo = PREFIJOS.find(p => tel.startsWith(p.valor))?.valor || '0414'
         const telNum = tel.replace(/\D/g, '').slice(4)
-        setForm({ nombre: c.nombre||'', apellido: c.apellido||'', cedula_tipo: tipo||'V', cedula_num: num||'', tel_prefijo: prefijo, tel_num: telNum })
+        setForm({ nombre: c.nombre||'', apellido: c.apellido||'', tel_prefijo: prefijo, tel_num: telNum })
       }
     }
   }, [id, esEdicion, clientes])
@@ -108,8 +107,7 @@ export default function NuevoCliente() {
     setErrores(e); setTocados(Object.fromEntries(camposTocados.map(c => [c, true])))
     if (Object.values(e).some(v => v)) return
     const telefono = form.tel_num.trim() ? `${form.tel_prefijo}-${form.tel_num.replace(/\D/g, '')}` : null
-    const cedula   = form.cedula_num.trim() ? `${form.cedula_tipo}-${form.cedula_num.trim()}` : null
-    const datos = { nombre: form.nombre.trim(), apellido: form.apellido.trim(), cedula, telefono }
+    const datos = { nombre: form.nombre.trim(), apellido: form.apellido.trim(), telefono }
     setGuardando(true)
     try {
       if (esEdicion) {
@@ -151,20 +149,6 @@ export default function NuevoCliente() {
                      onChange={e => set('apellido', e.target.value.replace(/[0-9]/g, ''))}
                      onBlur={() => tocar('apellido')} placeholder="Pérez" maxLength={50} />
               {err('apellido') && <p className="text-red-400 text-xs mt-1">{errores.apellido}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className="glass-label">Cédula <span className="text-white/35 font-normal">(opcional)</span></label>
-            <div className="flex gap-2">
-              <select className="glass-input" style={{width:'76px', flexShrink:0}} value={form.cedula_tipo}
-                      onChange={e => setForm(f => ({ ...f, cedula_tipo: e.target.value }))}>
-                <option value="V">V-</option>
-                <option value="E">E-</option>
-              </select>
-              <input inputMode="numeric" className="glass-input flex-1" value={form.cedula_num}
-                     onChange={e => set('cedula_num', e.target.value.replace(/\D/g,'').slice(0,8))}
-                     placeholder="12345678" maxLength={8} />
             </div>
           </div>
 

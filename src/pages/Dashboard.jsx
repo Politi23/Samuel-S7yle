@@ -44,7 +44,7 @@ export default function Dashboard() {
 
   const qFiltrados = clientes.filter(c => {
     const q = qBusqueda.toLowerCase()
-    return (c.nombre||'').toLowerCase().includes(q) || (c.apellido||'').toLowerCase().includes(q) || (c.cedula||'').includes(q)
+    return (c.nombre||'').toLowerCase().includes(q) || (c.apellido||'').toLowerCase().includes(q) || (c.telefono||'').includes(q)
   }).slice(0, 5)
 
   const abrirCitaRapida = () => {
@@ -430,11 +430,11 @@ export default function Dashboard() {
                       style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)'}}>
                 <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
                      style={{background:'rgba(217,119,6,0.20)'}}>
-                  <span className="text-amber-300 text-xs font-bold">{(c.nombre||' ')[0]}{(c.apellido||' ')[0]}</span>
+                  <span className="text-amber-300 text-xs font-bold">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-white text-sm font-semibold">{c.nombre} {c.apellido}</p>
-                  <p className="text-white/45 text-xs">{c.cedula || c.telefono || ''}</p>
+                  <p className="text-white/45 text-xs">{c.telefono || ''}</p>
                 </div>
                 <ChevronRight size={15} className="text-white/25" />
               </button>
@@ -524,7 +524,7 @@ export default function Dashboard() {
                               className="w-full flex items-center gap-3 rounded-2xl px-3 py-2 active:bg-white/10 text-left"
                               style={{background:'rgba(255,255,255,0.06)'}}>
                         <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(217,119,6,0.20)'}}>
-                          <span className="text-amber-300 font-bold text-xs">{(c.nombre||' ')[0]}{(c.apellido||' ')[0]}</span>
+                          <span className="text-amber-300 font-bold text-xs">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
                         </div>
                         <span className="text-white text-sm">{c.nombre} {c.apellido}</span>
                       </button>
