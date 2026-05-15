@@ -3,11 +3,11 @@ import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { useBcv } from '../hooks/useBcv'
 import { useNavigate } from 'react-router-dom'
-import { Users, DollarSign, TrendingUp, Clock, Plus, ChevronRight, LogOut, UserPlus, CalendarDays, ArrowDownCircle, AlertTriangle, Search, X, BarChart2, CheckCircle2 } from 'lucide-react'
+import { Users, DollarSign, TrendingUp, Clock, Plus, ChevronRight, LogOut, UserPlus, CalendarDays, ArrowDownCircle, AlertTriangle, Search, X, BarChart2, CheckCircle2, Gift } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE, toFechaVE } from '../lib/fecha'
 
-const MOTIVOS_RAPIDOS = ['Corte de cabello','Afeitado','Diseño de barba','Corte + Barba','Coloración','Otro']
+const MOTIVOS_RAPIDOS = ['Corte de cabello','Afeitado','Diseño de barba','Corte + Barba','Coloración','Cejas','Colorimetría','Pigmentación','Otro']
 
 function formatHora(hora) {
   if (!hora) return ''
@@ -153,6 +153,21 @@ export default function Dashboard() {
   const ultimosClientes = [...clientes].slice(0, 3)
   const fechaLabel = hoyDate.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'long' })
 
+  // ── Cumpleaños próximos 7 días ──
+  const hoyMMDD = hoyStr.slice(5)
+  const cumpleHoy = clientes.filter(c => c.fecha_nacimiento && c.fecha_nacimiento.slice(5) === hoyMMDD)
+  const cumpleProximos = clientes.filter(c => {
+    if (!c.fecha_nacimiento) return false
+    const mmdd = c.fecha_nacimiento.slice(5)
+    if (mmdd === hoyMMDD) return false
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(hoyDate); d.setDate(hoyDate.getDate() + i)
+      const dStr = toFechaVE(d).slice(5)
+      if (mmdd === dStr) return true
+    }
+    return false
+  })
+
   return (
     <div className="min-h-screen">
       <PageHeader
@@ -227,6 +242,48 @@ export default function Dashboard() {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Cumpleaños */}
+        {cumpleHoy.length > 0 && cumpleHoy.map(c => (
+          <div key={c.id} className="glass-card flex items-center gap-3"
+               style={{background:'rgba(236,72,153,0.12)', border:'1px solid rgba(236,72,153,0.35)'}}>
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                 style={{background:'rgba(236,72,153,0.20)', border:'1px solid rgba(236,72,153,0.40)'}}>
+              <Gift size={19} className="text-pink-300" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-pink-200 text-xs font-semibold">Cumpleanos hoy</p>
+              <p className="text-white font-bold truncate">{c.nombre} {c.apellido}</p>
+              <p className="text-pink-300/70 text-xs">Servicio gratis</p>
+            </div>
+            <button onClick={() => navigate(`/clientes/${c.id}`)} className="text-white/35 active:text-white/70">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        ))}
+        {cumpleProximos.length > 0 && (
+          <div className="glass-card space-y-2" style={{background:'rgba(139,92,246,0.10)', border:'1px solid rgba(139,92,246,0.25)'}}>
+            <div className="flex items-center gap-2">
+              <Gift size={14} className="text-violet-300" />
+              <span className="text-violet-200 text-sm font-semibold">Cumpleanos esta semana</span>
+            </div>
+            {cumpleProximos.map(c => {
+              const [, mm, dd] = c.fecha_nacimiento.split('-')
+              return (
+                <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
+                        className="w-full flex items-center gap-3 rounded-2xl px-3 py-2 active:bg-white/5 text-left"
+                        style={{background:'rgba(255,255,255,0.05)'}}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                       style={{background:'rgba(139,92,246,0.20)'}}>
+                    <span className="text-violet-300 font-bold text-xs">{c.nombre[0].toUpperCase()}{c.apellido[0].toUpperCase()}</span>
+                  </div>
+                  <span className="text-white text-sm flex-1">{c.nombre} {c.apellido}</span>
+                  <span className="text-violet-300 text-xs font-semibold">{dd}/{mm}</span>
+                </button>
+              )
+            })}
           </div>
         )}
 

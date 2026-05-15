@@ -6,7 +6,7 @@ import { Save, Search } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
-const MOTIVOS = ['Corte de cabello','Afeitado','Diseño de barba','Corte + Barba','Coloración','Tratamiento capilar','Lavado','Diseño','Otro']
+const MOTIVOS = ['Corte de cabello','Afeitado','Diseño de barba','Corte + Barba','Coloración','Cejas','Colorimetría','Pigmentación','Tratamiento capilar','Lavado','Diseño','Otro']
 
 export default function NuevaCita() {
   const navigate = useNavigate()

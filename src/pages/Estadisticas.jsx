@@ -1,6 +1,7 @@
 import { useApp } from '../context/AppContext'
 import { useBcv } from '../hooks/useBcv'
-import { TrendingUp, Users, CalendarDays, DollarSign, Award } from 'lucide-react'
+import { TrendingUp, Users, CalendarDays, DollarSign, Award, Star } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
@@ -9,6 +10,7 @@ const DIAS   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 
 export default function Estadisticas() {
   const { clientes, ingresos, citas } = useApp()
+  const navigate = useNavigate()
   const { data: bcv } = useBcv()
   const tasaHoy = bcv?.eur ?? null
 
@@ -37,6 +39,18 @@ export default function Estadisticas() {
 
   const maxIngreso = Math.max(...datosMes.map(m => m.total), 1)
   const maxCitas   = Math.max(...datosMes.map(m => m.citas), 1)
+
+  // ── Clientes más frecuentes ──
+  const clienteMap = {}
+  ingresos.forEach(i => {
+    if (!i.cliente_id) return
+    if (!clienteMap[i.cliente_id]) clienteMap[i.cliente_id] = { nombre: i.cliente_nombre || '', visitas: 0, total: 0 }
+    clienteMap[i.cliente_id].visitas++
+    const t = Number(i.tasa_bcv)
+    clienteMap[i.cliente_id].total += i.moneda === 'USD' ? Number(i.monto) : (t ? Number(i.monto) / t : 0)
+  })
+  const topClientes = Object.entries(clienteMap).sort((a, b) => b[1].visitas - a[1].visitas).slice(0, 5)
+  const maxVisitas = topClientes[0]?.[1].visitas || 1
 
   // ── Servicios top ──
   const servMap = {}
@@ -104,6 +118,48 @@ export default function Estadisticas() {
             </div>
           ))}
         </div>
+
+        {/* Clientes más frecuentes */}
+        {topClientes.length > 0 && (
+          <div className="glass-card space-y-3">
+            <div className="flex items-center gap-2">
+              <Star size={14} className="text-amber-300" />
+              <span className="text-white font-semibold text-sm">Clientes más frecuentes</span>
+            </div>
+            <div className="space-y-2.5">
+              {topClientes.map(([clienteId, { nombre, visitas, total }], i) => (
+                <button key={clienteId} onClick={() => navigate(`/clientes/${clienteId}`)}
+                        className="w-full space-y-1 text-left active:opacity-70">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-white/25 text-xs w-4 text-right flex-shrink-0">#{i+1}</span>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                           style={{background: i === 0 ? 'rgba(217,119,6,0.30)' : 'rgba(255,255,255,0.10)'}}>
+                        <span className="text-xs font-bold" style={{color: i === 0 ? '#fcd34d' : 'rgba(255,255,255,0.60)'}}>
+                          {(nombre.split(' ')[0]||' ')[0].toUpperCase()}{(nombre.split(' ')[1]||' ')[0].toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-white/85 text-sm truncate">{nombre}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-white/40 text-xs">{visitas} visitas</span>
+                      <span className="text-emerald-300 text-xs font-semibold">${total.toFixed(0)}</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden ml-6" style={{background:'rgba(255,255,255,0.08)'}}>
+                    <div className="h-full rounded-full"
+                         style={{
+                           width:`${(visitas/maxVisitas)*100}%`,
+                           background: i === 0
+                             ? 'linear-gradient(90deg, rgba(217,119,6,0.9), rgba(217,119,6,0.4))'
+                             : 'linear-gradient(90deg, rgba(255,255,255,0.30), rgba(255,255,255,0.12))'
+                         }} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Ingresos últimos 6 meses */}
         <div className="glass-card space-y-3">

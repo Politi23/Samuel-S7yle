@@ -12,11 +12,11 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react':  ['react', 'react-dom'],
-          'vendor-router': ['react-router-dom'],
-          'vendor-supa':   ['@supabase/supabase-js'],
-          'vendor-lucide': ['lucide-react'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) return 'vendor-react'
+          if (id.includes('node_modules/react-router-dom') || id.includes('node_modules/react-router')) return 'vendor-router'
+          if (id.includes('node_modules/@supabase')) return 'vendor-supa'
+          if (id.includes('node_modules/lucide-react')) return 'vendor-lucide'
         },
       },
     },

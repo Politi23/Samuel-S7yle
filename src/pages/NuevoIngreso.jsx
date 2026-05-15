@@ -7,7 +7,7 @@ import { Save, Search } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
-const SERVICIOS = ['Corte de cabello','Afeitado','Diseño de barba','Corte + Barba','Coloración','Tratamiento capilar','Lavado','Diseño','Otro']
+const SERVICIOS = ['Corte de cabello','Afeitado','Diseño de barba','Corte + Barba','Coloración','Cejas','Colorimetría','Pigmentación','Tratamiento capilar','Lavado','Diseño','Otro']
 const METODOS   = ['Efectivo USD','Efectivo Bs','Transferencia bancaria','Zelle','PayPal','Pago Móvil','Binance / Cripto','Otro']
 const METODOS_BS  = ['Efectivo Bs', 'Transferencia bancaria', 'Pago Móvil']
 const METODOS_USD = ['Efectivo USD', 'Zelle', 'PayPal', 'Binance / Cripto']

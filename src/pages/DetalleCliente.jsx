@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
-import { Edit2, Trash2, DollarSign, Plus, Phone, Calendar, Clock, Copy, Check, MessageCircle, CalendarPlus } from 'lucide-react'
+import { Edit2, Trash2, DollarSign, Plus, Phone, Calendar, Clock, Copy, Check, MessageCircle, CalendarPlus, Camera, X, Gift, Star } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
@@ -34,11 +34,34 @@ export default function DetalleCliente() {
   const [eliminando, setEliminando] = useState(false)
   const [tabActivo, setTabActivo] = useState('pagos')
   const [copiado, setCopiado] = useState(false)
+  const [fotos, setFotos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`fotos_${id}`) || '[]') } catch { return [] }
+  })
+  const [fotoGrande, setFotoGrande] = useState(null)
 
   const formatTel = (tel) => {
     if (!tel) return ''
     const d = tel.replace(/\D/g, '')
     return d.startsWith('0') && d.length === 11 ? `+58 ${d.slice(1, 4)}-${d.slice(4)}` : tel
+  }
+
+  const agregarFoto = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const nuevas = [...fotos, { id: Date.now(), url: ev.target.result, fecha: hoyVE() }]
+      setFotos(nuevas)
+      try { localStorage.setItem(`fotos_${id}`, JSON.stringify(nuevas)) } catch {}
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const eliminarFoto = (fotoId) => {
+    const nuevas = fotos.filter(f => f.id !== fotoId)
+    setFotos(nuevas)
+    localStorage.setItem(`fotos_${id}`, JSON.stringify(nuevas))
   }
 
   const copiarTelefono = () => {
@@ -74,6 +97,20 @@ export default function DetalleCliente() {
     .sort((a, b) => new Date(b.fecha) - new Date(a.fecha) || (b.hora||'').localeCompare(a.hora||''))
 
   const hoyStr = hoyVE()
+
+  const totalVisitas = historial.length
+  const esCumpleHoy = cliente.fecha_nacimiento && cliente.fecha_nacimiento.slice(5) === hoyStr.slice(5)
+  const edad = cliente.fecha_nacimiento ? (() => {
+    const [ay, am, ad] = cliente.fecha_nacimiento.split('-').map(Number)
+    const [hy, hm, hd] = hoyStr.split('-').map(Number)
+    let e = hy - ay
+    if (hm < am || (hm === am && hd < ad)) e--
+    return e
+  })() : null
+  const fecNacLabel = cliente.fecha_nacimiento ? (() => {
+    const [, m, d] = cliente.fecha_nacimiento.split('-')
+    return `${d}/${m}`
+  })() : null
   const proximaCita = citas
     .filter(c => c.cliente_id === id && c.fecha >= hoyStr && (c.estado === 'pendiente' || !c.estado))
     .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora||'').localeCompare(b.hora||''))
@@ -112,6 +149,13 @@ export default function DetalleCliente() {
           <div className="text-center">
             <h2 className="text-white text-lg font-bold">{cliente.nombre} {cliente.apellido}</h2>
 
+            {esCumpleHoy && (
+              <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-2xl"
+                   style={{background:'rgba(236,72,153,0.20)', border:'1px solid rgba(236,72,153,0.40)'}}>
+                <Gift size={12} className="text-pink-300" />
+                <span className="text-pink-200 text-xs font-semibold">Cumpleanos hoy · Servicio gratis</span>
+              </div>
+            )}
             {cliente.telefono && (
               <div className="flex items-center justify-center gap-3 mt-2">
                 <a href={`https://wa.me/${cliente.telefono.replace(/\D/g, '').replace(/^0/, '58')}`}
@@ -129,6 +173,18 @@ export default function DetalleCliente() {
                 </button>
               </div>
             )}
+            <div className="flex items-center justify-center gap-4 mt-3">
+              {fecNacLabel && (
+                <div className="flex items-center gap-1.5">
+                  <Gift size={12} className="text-violet-300" />
+                  <span className="text-white/50 text-xs">{fecNacLabel}{edad !== null ? ` · ${edad} años` : ''}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5">
+                <Star size={12} className="text-amber-300" />
+                <span className="text-white/50 text-xs">{totalVisitas} {totalVisitas === 1 ? 'visita' : 'visitas'}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -185,10 +241,11 @@ export default function DetalleCliente() {
         </div>
 
         {/* Tabs */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {[
             { key: 'pagos', label: `Pagos (${historial.length})` },
             { key: 'citas', label: `Citas (${citasCliente.length})` },
+            { key: 'fotos', label: `Fotos (${fotos.length})` },
           ].map(t => (
             <button key={t.key} onClick={() => setTabActivo(t.key)}
                     className="py-2.5 rounded-2xl text-sm font-semibold transition-all"
@@ -302,7 +359,61 @@ export default function DetalleCliente() {
             )}
           </div>
         )}
+        {tabActivo === 'fotos' && (
+          <div className="glass-card space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-white font-semibold text-sm">Fotos de cortes</span>
+              <label className="glass-btn-icon cursor-pointer" style={{padding:'6px'}}>
+                <Camera size={15} className="text-white" />
+                <input type="file" accept="image/*" className="hidden" onChange={agregarFoto} />
+              </label>
+            </div>
+            {fotos.length === 0 ? (
+              <label className="flex flex-col items-center justify-center py-10 rounded-2xl cursor-pointer"
+                     style={{border:'1px dashed rgba(255,255,255,0.15)', background:'rgba(255,255,255,0.03)'}}>
+                <Camera size={28} className="text-white/25 mb-2" />
+                <p className="text-white/35 text-sm">Toca para agregar foto</p>
+                <input type="file" accept="image/*" className="hidden" onChange={agregarFoto} />
+              </label>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {fotos.map(f => (
+                  <div key={f.id} className="relative rounded-2xl overflow-hidden aspect-square">
+                    <img src={f.url} alt="" className="w-full h-full object-cover"
+                         onClick={() => setFotoGrande(f)} />
+                    <button onClick={() => eliminarFoto(f.id)}
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center"
+                            style={{background:'rgba(0,0,0,0.65)'}}>
+                      <X size={11} className="text-white" />
+                    </button>
+                    <span className="absolute bottom-1 left-1 text-[9px] text-white/60 px-1.5 py-0.5 rounded-lg"
+                          style={{background:'rgba(0,0,0,0.50)'}}>{formatFecha(f.fecha)}</span>
+                  </div>
+                ))}
+                <label className="rounded-2xl aspect-square flex items-center justify-center cursor-pointer"
+                       style={{border:'1px dashed rgba(255,255,255,0.15)', background:'rgba(255,255,255,0.03)'}}>
+                  <Camera size={20} className="text-white/25" />
+                  <input type="file" accept="image/*" className="hidden" onChange={agregarFoto} />
+                </label>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
+
+      {/* Foto grande */}
+      {fotoGrande && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
+             style={{background:'rgba(0,0,0,0.85)'}}
+             onClick={() => setFotoGrande(null)}>
+          <img src={fotoGrande.url} alt="" className="max-w-full max-h-full rounded-2xl object-contain" />
+          <button className="absolute top-5 right-5 w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{background:'rgba(255,255,255,0.15)'}}>
+            <X size={18} className="text-white" />
+          </button>
+        </div>
+      )}
 
       {/* Modal eliminar cliente */}
       {confirmar && (

@@ -13,7 +13,7 @@ const PREFIJOS = [
   { valor: '0424', label: '0424 · Movistar' },
   { valor: '0426', label: '0426 · Movistar' },
 ]
-const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '' }
+const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '' }
 const DRAFT_KEY = 'draft_nuevo_cliente'
 
 function validarNombre(v) {
@@ -62,7 +62,7 @@ export default function NuevoCliente() {
         const tel = c.telefono || ''
         const prefijo = PREFIJOS.find(p => tel.startsWith(p.valor))?.valor || '0414'
         const telNum = tel.replace(/\D/g, '').slice(4)
-        setForm({ nombre: c.nombre||'', apellido: c.apellido||'', tel_prefijo: prefijo, tel_num: telNum })
+        setForm({ nombre: c.nombre||'', apellido: c.apellido||'', tel_prefijo: prefijo, tel_num: telNum, fecha_nacimiento: c.fecha_nacimiento||'' })
       }
     }
   }, [id, esEdicion, clientes])
@@ -107,7 +107,7 @@ export default function NuevoCliente() {
     setErrores(e); setTocados(Object.fromEntries(camposTocados.map(c => [c, true])))
     if (Object.values(e).some(v => v)) return
     const telefono = form.tel_num.trim() ? `${form.tel_prefijo}-${form.tel_num.replace(/\D/g, '')}` : null
-    const datos = { nombre: form.nombre.trim(), apellido: form.apellido.trim(), telefono }
+    const datos = { nombre: form.nombre.trim(), apellido: form.apellido.trim(), telefono, fecha_nacimiento: form.fecha_nacimiento || null }
     setGuardando(true)
     try {
       if (esEdicion) {
@@ -150,6 +150,12 @@ export default function NuevoCliente() {
                      onBlur={() => tocar('apellido')} placeholder="Pérez" maxLength={50} />
               {err('apellido') && <p className="text-red-400 text-xs mt-1">{errores.apellido}</p>}
             </div>
+          </div>
+
+          <div>
+            <label className="glass-label">Fecha de nacimiento <span className="text-white/35 font-normal">(opcional)</span></label>
+            <input type="date" className="glass-input" value={form.fecha_nacimiento}
+                   onChange={e => setForm(f => ({ ...f, fecha_nacimiento: e.target.value }))} />
           </div>
 
           <div>
