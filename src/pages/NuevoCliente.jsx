@@ -51,7 +51,9 @@ export default function NuevoCliente() {
 
   useEffect(() => {
     if (!esEdicion) {
-      try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form)) } catch {}
+      // Excluir fecha_nacimiento del draft (PII sensible)
+      const { fecha_nacimiento: _, ...draftSafe } = form
+      try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draftSafe)) } catch {}
     }
   }, [form, esEdicion])
 

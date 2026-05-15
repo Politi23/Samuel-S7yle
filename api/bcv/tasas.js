@@ -9,7 +9,7 @@ function fetchBCVPage() {
       hostname: 'www.bcv.org.ve',
       path: '/',
       method: 'GET',
-      rejectUnauthorized: false,
+      rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -67,8 +67,13 @@ async function getTasas(force = false) {
 
 export default async function handler(req, res) {
   const origin = req.headers.origin
-  const allowed = ['http://localhost:5173']
-  if (allowed.includes(origin)) res.setHeader('Access-Control-Allow-Origin', origin)
+  const allowed = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',').map(s => s.trim())
+  if (origin && allowed.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+  }
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
   try {
     const force = req.query?.force === '1'
     const data = await getTasas(force)

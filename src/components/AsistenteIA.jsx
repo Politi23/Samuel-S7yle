@@ -133,11 +133,15 @@ export default function AsistenteIA() {
         }))
       ]
 
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 30000)
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages })
+        body: JSON.stringify({ messages }),
+        signal: controller.signal,
       })
+      clearTimeout(timer)
 
       if (!res.ok) throw new Error('Error del servidor')
       const data = await res.json()
