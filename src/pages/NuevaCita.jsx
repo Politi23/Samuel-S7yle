@@ -6,7 +6,7 @@ import { Save, Search } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
-const MOTIVOS = ['Corte de cabello','Afeitado','Diseño de barba','Corte + Barba','Coloración','Cejas','Colorimetría','Pigmentación','Tratamiento capilar','Lavado','Diseño','Otro']
+const MOTIVOS = ['Corte de cabello','Corte + Barba','Cejas','Colorimetría','Pigmentación','Lavado','Otro']
 
 export default function NuevaCita() {
   const navigate = useNavigate()
@@ -110,7 +110,7 @@ export default function NuevaCita() {
                  style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)'}}>
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:'rgba(217,119,6,0.20)'}}>
-                  <span className="text-amber-300 font-bold text-xs">{form.cliente_nombre.split(' ').map(n=>n[0]).slice(0,2).join('')}</span>
+                  <span className="text-amber-300 font-bold text-xs">{(form.cliente_nombre||'').split(' ').filter(n=>n).map(n=>n[0].toUpperCase()).slice(0,2).join('')}</span>
                 </div>
                 <span className="text-white text-sm font-semibold">{form.cliente_nombre}</span>
               </div>

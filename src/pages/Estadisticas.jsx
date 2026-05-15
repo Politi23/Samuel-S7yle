@@ -68,7 +68,7 @@ export default function Estadisticas() {
 
   // ── Días de semana ──
   const citasPorDia = Array(7).fill(0)
-  citas.forEach(c => { const d = new Date(c.fecha + 'T12:00'); citasPorDia[d.getDay()]++ })
+  citas.forEach(c => { if (!c.fecha) return; const d = new Date(c.fecha + 'T12:00'); citasPorDia[d.getDay()]++ })
   const maxDia = Math.max(...citasPorDia, 1)
 
   // ── Horas pico ──

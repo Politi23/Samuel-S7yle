@@ -7,7 +7,7 @@ import { Users, DollarSign, TrendingUp, Clock, Plus, ChevronRight, LogOut, UserP
 import PageHeader from '../components/PageHeader'
 import { hoyVE, toFechaVE } from '../lib/fecha'
 
-const MOTIVOS_RAPIDOS = ['Corte de cabello','Afeitado','Diseño de barba','Corte + Barba','Coloración','Cejas','Colorimetría','Pigmentación','Otro']
+const MOTIVOS_RAPIDOS = ['Corte de cabello','Corte + Barba','Cejas','Colorimetría','Pigmentación','Lavado','Otro']
 
 function formatHora(hora) {
   if (!hora) return ''

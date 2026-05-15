@@ -55,7 +55,7 @@ function construirContexto({ clientes, ingresos, citas, egresos, tasaHoy }) {
   })
   const resumenMensual = Object.entries(mesesMap).sort((a,b) => a[0].localeCompare(b[0]))
     .map(([k, v]) => {
-      const citasK = citas.filter(c => c.fecha.startsWith(k))
+      const citasK = citas.filter(c => c.fecha && c.fecha.startsWith(k))
       return `${k}: $${v.ingresos.toFixed(2)} USD | ${v.pagos} cobros | ${citasK.length} citas (${citasK.filter(c=>c.estado==='atendida').length} atendidas)`
     }).join('\n')
 
@@ -84,13 +84,13 @@ ${resumenMensual || 'Sin datos'}
 ${clientes.map(c=>`- ${c.nombre} ${c.apellido} | ${c.telefono||'sin teléfono'} | Registrado: ${c.created_at ? c.created_at.split('T')[0] : 'desconocido'}`).join('\n')}
 
 === TODOS LOS INGRESOS (${ingresos.length}) ===
-${[...ingresos].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(i=>`- ${i.fecha}: ${i.cliente_nombre} | ${i.concepto} | ${i.moneda==='USD'?'$':'Bs.'}${Number(i.monto).toFixed(2)} | ${i.metodo_pago}${i.tasa_bcv?' | Tasa:'+i.tasa_bcv:''}${i.notas?' | Nota:'+i.notas:''}`).join('\n')}
+${[...ingresos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(i=>`- ${i.fecha}: ${i.cliente_nombre} | ${i.concepto} | ${i.moneda==='USD'?'$':'Bs.'}${Number(i.monto).toFixed(2)} | ${i.metodo_pago}${i.tasa_bcv?' | Tasa:'+i.tasa_bcv:''}${i.notas?' | Nota:'+i.notas:''}`).join('\n')}
 
 === TODAS LAS CITAS (${citas.length}) ===
-${[...citas].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(c=>`- ${c.fecha} ${c.hora||'sin hora'}: ${c.cliente_nombre} | ${c.motivo} | ${c.estado||'pendiente'}${c.notas?' | '+c.notas:''}`).join('\n')}
+${[...citas].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(c=>`- ${c.fecha} ${c.hora||'sin hora'}: ${c.cliente_nombre} | ${c.motivo} | ${c.estado||'pendiente'}${c.notas?' | '+c.notas:''}`).join('\n')}
 
 === TODOS LOS EGRESOS (${egresos.length}) ===
-${[...egresos].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(e=>`- ${e.fecha}: ${e.categoria||e.descripcion||'sin descripción'} | ${e.moneda==='USD'?'$':'Bs.'}${Number(e.monto).toFixed(2)}${e.descripcion?' | '+e.descripcion:''}`).join('\n')}`
+${[...egresos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(e=>`- ${e.fecha}: ${e.categoria||e.descripcion||'sin descripción'} | ${e.moneda==='USD'?'$':'Bs.'}${Number(e.monto).toFixed(2)}${e.descripcion?' | '+e.descripcion:''}`).join('\n')}`
 }
 
 export default function AsistenteIA() {
@@ -139,6 +139,7 @@ export default function AsistenteIA() {
         body: JSON.stringify({ messages })
       })
 
+      if (!res.ok) throw new Error('Error del servidor')
       const data = await res.json()
       const respuesta = data.respuesta || data.error || 'No pude generar una respuesta.'
       setMensajes(prev => [...prev, { role: 'model', text: respuesta }])
