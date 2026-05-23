@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useBcv } from '../hooks/useBcv'
 import { useToast } from '../context/ToastContext'
-import { Save, Search } from 'lucide-react'
+import { Save, Search, Plus, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
@@ -36,6 +36,12 @@ export default function NuevoIngreso() {
   const [bsPersonalizado, setBsPersonalizado] = useState(false)
   const [montoBsCustom, setMontoBsCustom] = useState('')
   const [guardando, setGuardando] = useState(false)
+
+  // Segundo método de pago
+  const [pago2Activo, setPago2Activo] = useState(false)
+  const [pago2, setPago2] = useState({ metodo: 'Pago Móvil', monto: '', moneda: 'USD' })
+  const [bs2Personalizado, setBs2Personalizado] = useState(false)
+  const [montoBs2Custom, setMontoBs2Custom] = useState('')
 
   useEffect(() => {
     if (esEdicion && ingresoExistente) {
@@ -78,6 +84,29 @@ export default function NuevoIngreso() {
     setForm(prev => ({ ...prev, moneda }))
   }
 
+  const setMetodo2 = (metodo) => {
+    let moneda = pago2.moneda
+    if (METODOS_USD.includes(metodo)) moneda = 'USD'
+    setBs2Personalizado(false); setMontoBs2Custom('')
+    setPago2(prev => ({ ...prev, metodo, moneda }))
+  }
+
+  const setMoneda2 = (moneda) => {
+    setBs2Personalizado(false); setMontoBs2Custom('')
+    setPago2(prev => ({ ...prev, moneda }))
+  }
+
+  const activarPago2 = () => {
+    setPago2Activo(true)
+    setPago2({ metodo: 'Pago Móvil', monto: '', moneda: 'USD' })
+    setBs2Personalizado(false); setMontoBs2Custom('')
+  }
+
+  const desactivarPago2 = () => {
+    setPago2Activo(false)
+    setBs2Personalizado(false); setMontoBs2Custom('')
+  }
+
   const seleccionar = (c) => { setForm(prev => ({ ...prev, cliente_id: c.id, cliente_nombre: `${c.nombre} ${c.apellido}` })); setMostrarBuscador(false); setBusqueda('') }
   const recientes = clientes.slice(0, 5)
   const filtrados = busqueda.trim()
@@ -85,14 +114,20 @@ export default function NuevoIngreso() {
     : recientes
 
   const tasaEur = bcv?.eur ?? null
-  const monto = Number(form.monto)
+  const monto1 = Number(form.monto)
+  const monto2 = Number(pago2.monto)
   const esBs = form.moneda === 'Bs'
+  const esBs2 = pago2.moneda === 'Bs'
   const metodoBs = METODOS_BS.includes(form.metodo_pago)
+  const metodoBs2 = METODOS_BS.includes(pago2.metodo)
   const soloUsd = ['Efectivo USD', 'Zelle', 'PayPal'].includes(form.metodo_pago)
-  const mostrarConvBs = !esBs && metodoBs && monto > 0
-  const montoBsAuto = tasaEur ? (monto * tasaEur).toFixed(2) : null
-  const montoBsMostrar = bsPersonalizado ? montoBsCustom : montoBsAuto
-  const montoEur = esBs && tasaEur && monto > 0 ? (monto / tasaEur).toFixed(2) : null
+  const soloUsd2 = ['Efectivo USD', 'Zelle', 'PayPal'].includes(pago2.metodo)
+  const mostrarConvBs = !esBs && metodoBs && monto1 > 0
+  const mostrarConvBs2 = pago2Activo && !esBs2 && metodoBs2 && monto2 > 0
+  const montoBsAuto = tasaEur ? (monto1 * tasaEur).toFixed(2) : null
+  const montoBs2Auto = tasaEur ? (monto2 * tasaEur).toFixed(2) : null
+  const montoEur = esBs && tasaEur && monto1 > 0 ? (monto1 / tasaEur).toFixed(2) : null
+  const totalUSD = pago2Activo ? (monto1 + monto2).toFixed(2) : null
 
   const toggleServicio = (s) => {
     setForm(prev => {
@@ -105,19 +140,35 @@ export default function NuevoIngreso() {
   const guardar = async () => {
     const e = {}
     if (!form.cliente_id) e.cliente_id = 'Selecciona un cliente'
-    if (!form.monto || Number(form.monto) <= 0) e.monto = 'Monto inválido'
+    if (!form.monto || monto1 <= 0) e.monto = 'Monto inválido'
+    if (pago2Activo && (!pago2.monto || monto2 <= 0)) e.monto2 = 'Monto del segundo método inválido'
     setErrores(e)
     if (Object.keys(e).length) return
+
     const partes = form.servicios.length
       ? form.servicios.map(s => s === 'Otro' ? (form.servicio_custom.trim() || 'Otro') : s)
       : ['Sin especificar']
     const concepto = partes.join(' + ')
-    const involucraBS = esBs || metodoBs
+
+    let montoFinal, monedaFinal, metodoPagoFinal, involucraBS
+
+    if (pago2Activo) {
+      montoFinal = monto1 + monto2
+      monedaFinal = 'USD'
+      metodoPagoFinal = `${form.metodo_pago} + ${pago2.metodo}`
+      involucraBS = esBs || metodoBs || esBs2 || metodoBs2
+    } else {
+      montoFinal = monto1
+      monedaFinal = form.moneda
+      metodoPagoFinal = form.metodo_pago
+      involucraBS = esBs || metodoBs
+    }
+
     const datos = {
       cliente_id: form.cliente_id, cliente_nombre: form.cliente_nombre,
       fecha: form.fecha, concepto,
-      monto: Number(form.monto), moneda: form.moneda,
-      metodo_pago: form.metodo_pago, notas: form.notas.trim(),
+      monto: montoFinal, moneda: monedaFinal,
+      metodo_pago: metodoPagoFinal, notas: form.notas.trim(),
       tasa_bcv: involucraBS && tasaEur ? tasaEur : null
     }
     setGuardando(true)
@@ -217,15 +268,17 @@ export default function NuevoIngreso() {
             )}
           </div>
 
+          {/* Método de pago 1 */}
           <div>
-            <label className="glass-label">Método de pago</label>
+            <label className="glass-label">{pago2Activo ? 'Primer método de pago' : 'Método de pago'}</label>
             <select className="glass-input" value={form.metodo_pago} onChange={e => setMetodo(e.target.value)}>
               {METODOS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
 
+          {/* Monto 1 */}
           <div>
-            <label className="glass-label">Monto *</label>
+            <label className="glass-label">{pago2Activo ? 'Monto — primer método *' : 'Monto *'}</label>
             <div className="flex gap-2">
               <div className="flex rounded-2xl overflow-hidden flex-shrink-0" style={{border:'1px solid rgba(255,255,255,0.20)'}}>
                 {['USD','Bs'].map(m => {
@@ -280,7 +333,7 @@ export default function NuevoIngreso() {
               </div>
             )}
 
-            {esBs && monto > 0 && (
+            {esBs && monto1 > 0 && !pago2Activo && (
               <div className="mt-2 rounded-2xl px-3 py-2.5 flex items-center justify-between"
                    style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.20)'}}>
                 <span className="text-emerald-300/70 text-xs">Equivalente EUR</span>
@@ -295,6 +348,98 @@ export default function NuevoIngreso() {
               </div>
             )}
           </div>
+
+          {/* Segundo método de pago */}
+          {pago2Activo ? (
+            <div className="space-y-3 rounded-2xl px-3 py-3" style={{background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.10)'}}>
+              <div className="flex items-center justify-between">
+                <label className="glass-label mb-0">Segundo método de pago</label>
+                <button type="button" onClick={desactivarPago2} className="text-white/35 hover:text-white/60 transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <select className="glass-input" value={pago2.metodo} onChange={e => setMetodo2(e.target.value)}>
+                {METODOS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+
+              <div>
+                <label className="glass-label">Monto — segundo método *</label>
+                <div className="flex gap-2">
+                  <div className="flex rounded-2xl overflow-hidden flex-shrink-0" style={{border:'1px solid rgba(255,255,255,0.20)'}}>
+                    {['USD','Bs'].map(m => {
+                      const bloqueado = soloUsd2 && m === 'Bs'
+                      return (
+                        <button key={m} onClick={() => !bloqueado && setMoneda2(m)}
+                                className="px-4 py-3 text-sm font-bold transition-colors"
+                                style={{
+                                  background: pago2.moneda === m ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)',
+                                  color: bloqueado ? 'rgba(255,255,255,0.20)' : 'white',
+                                  cursor: bloqueado ? 'not-allowed' : 'pointer'
+                                }}>
+                          {m}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <input type="number" step="0.01" min="0"
+                         className={`glass-input flex-1${errores.monto2 ? ' error' : ''}`}
+                         placeholder="0.00" value={pago2.monto}
+                         onChange={e => { setPago2(prev => ({ ...prev, monto: e.target.value })); if (errores.monto2) setErrores(prev => ({ ...prev, monto2: '' })) }} />
+                </div>
+                {errores.monto2 && <p className="text-red-400 text-xs mt-1">{errores.monto2}</p>}
+
+                {mostrarConvBs2 && (
+                  <div className="mt-2 rounded-2xl px-3 py-2.5 space-y-2"
+                       style={{background:'rgba(217,119,6,0.15)', border:'1px solid rgba(217,119,6,0.30)'}}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-amber-300/70 text-xs">Equivalente en Bs</span>
+                      <button type="button"
+                              onClick={() => { setBs2Personalizado(v => !v); setMontoBs2Custom(montoBs2Auto || '') }}
+                              className="text-xs font-semibold"
+                              style={{color: bs2Personalizado ? 'rgba(251,191,36,1)' : 'rgba(255,255,255,0.40)'}}>
+                        {bs2Personalizado ? 'Usar BCV' : 'Personalizar'}
+                      </button>
+                    </div>
+                    {bs2Personalizado ? (
+                      <input type="number" step="0.01" min="0" className="glass-input"
+                             placeholder="Monto en Bs exacto..." value={montoBs2Custom}
+                             onChange={e => setMontoBs2Custom(e.target.value)} />
+                    ) : (
+                      <div className="flex items-end justify-between">
+                        {tasaEur ? (
+                          <>
+                            <p className="text-amber-200 text-sm font-bold">Bs {montoBs2Auto}</p>
+                            <p className="text-white/35 text-xs">Tasa EUR: {parseFloat(tasaEur.toFixed(4))}</p>
+                          </>
+                        ) : (
+                          <p className="text-white/40 text-xs">Sin tasa disponible</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {monto1 > 0 && monto2 > 0 && (
+                <div className="rounded-2xl px-3 py-2.5 flex items-center justify-between"
+                     style={{background:'rgba(217,119,6,0.20)', border:'1px solid rgba(217,119,6,0.35)'}}>
+                  <span className="text-amber-300/80 text-xs font-semibold">Total</span>
+                  <span className="text-white font-bold text-sm">${totalUSD} USD</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={activarPago2}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-semibold text-white/50 hover:text-white/75 transition-colors"
+              style={{background:'rgba(255,255,255,0.05)', border:'1px dashed rgba(255,255,255,0.20)'}}
+            >
+              <Plus size={15} />
+              Agregar segundo método de pago
+            </button>
+          )}
 
           <div>
             <label className="glass-label">Notas</label>

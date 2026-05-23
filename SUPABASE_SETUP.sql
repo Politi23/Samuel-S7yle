@@ -3,13 +3,13 @@
 
 -- 1. Tabla de clientes
 CREATE TABLE IF NOT EXISTS clientes (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nombre      TEXT NOT NULL,
-  apellido    TEXT NOT NULL DEFAULT '',
-  cedula      TEXT,
-  telefono    TEXT,
-  notas       TEXT,
-  created_at  TIMESTAMPTZ DEFAULT now()
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre            TEXT NOT NULL,
+  apellido          TEXT NOT NULL DEFAULT '',
+  telefono          TEXT,
+  fecha_nacimiento  DATE,
+  notas             TEXT,
+  created_at        TIMESTAMPTZ DEFAULT now()
 );
 
 -- 2. Tabla de ingresos
