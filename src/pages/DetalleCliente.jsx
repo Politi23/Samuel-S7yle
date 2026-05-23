@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { supabase } from '../lib/supabase'
+import { useToast } from '../context/ToastContext'
 import { Edit2, Trash2, DollarSign, Plus, Phone, Calendar, Clock, Copy, Check, MessageCircle, CalendarPlus, Camera, X, Gift, Star } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
@@ -34,10 +36,31 @@ export default function DetalleCliente() {
   const [eliminando, setEliminando] = useState(false)
   const [tabActivo, setTabActivo] = useState('pagos')
   const [copiado, setCopiado] = useState(false)
-  const [fotos, setFotos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(`fotos_${id}`) || '[]') } catch { return [] }
-  })
+  const [fotos, setFotos] = useState([])
+  const [cargandoFotos, setCargandoFotos] = useState(false)
   const [fotoGrande, setFotoGrande] = useState(null)
+  const toast = useToast()
+
+  useEffect(() => {
+    const cargarFotos = async () => {
+      setCargandoFotos(true)
+      const { data, error } = await supabase.storage
+        .from('fotos-cortes')
+        .list(id, { sortBy: { column: 'created_at', order: 'desc' } })
+      if (error || !data) { setCargandoFotos(false); return }
+      const con = await Promise.all(
+        data.filter(f => f.name !== '.emptyFolderPlaceholder').map(async (file) => {
+          const { data: sd } = await supabase.storage
+            .from('fotos-cortes')
+            .createSignedUrl(`${id}/${file.name}`, 3600)
+          return { id: file.name, url: sd?.signedUrl || '', fecha: (file.created_at || '').slice(0, 10) }
+        })
+      )
+      setFotos(con.filter(f => f.url))
+      setCargandoFotos(false)
+    }
+    cargarFotos()
+  }, [id])
 
   const formatTel = (tel) => {
     if (!tel) return ''
@@ -45,23 +68,24 @@ export default function DetalleCliente() {
     return d.startsWith('0') && d.length === 11 ? `+58 ${d.slice(1, 4)}-${d.slice(4)}` : tel
   }
 
-  const agregarFoto = (e) => {
+  const agregarFoto = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const nuevas = [...fotos, { id: Date.now(), url: ev.target.result, fecha: hoyVE() }]
-      setFotos(nuevas)
-      try { localStorage.setItem(`fotos_${id}`, JSON.stringify(nuevas)) } catch {}
-    }
-    reader.readAsDataURL(file)
     e.target.value = ''
+    const ext = file.name.split('.').pop() || 'jpg'
+    const nombre = `${Date.now()}.${ext}`
+    const path = `${id}/${nombre}`
+    const { error } = await supabase.storage.from('fotos-cortes').upload(path, file)
+    if (error) { toast('Error al subir foto', 'error'); return }
+    const { data: sd } = await supabase.storage.from('fotos-cortes').createSignedUrl(path, 3600)
+    if (sd?.signedUrl) {
+      setFotos(prev => [{ id: nombre, url: sd.signedUrl, fecha: hoyVE() }, ...prev])
+    }
   }
 
-  const eliminarFoto = (fotoId) => {
-    const nuevas = fotos.filter(f => f.id !== fotoId)
-    setFotos(nuevas)
-    localStorage.setItem(`fotos_${id}`, JSON.stringify(nuevas))
+  const eliminarFoto = async (fotoId) => {
+    await supabase.storage.from('fotos-cortes').remove([`${id}/${fotoId}`])
+    setFotos(prev => prev.filter(f => f.id !== fotoId))
   }
 
   const copiarTelefono = () => {
@@ -365,10 +389,12 @@ export default function DetalleCliente() {
               <span className="text-white font-semibold text-sm">Fotos de cortes</span>
               <label className="glass-btn-icon cursor-pointer" style={{padding:'6px'}}>
                 <Camera size={15} className="text-white" />
-                <input type="file" accept="image/*" className="hidden" onChange={agregarFoto} />
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={agregarFoto} />
               </label>
             </div>
-            {fotos.length === 0 ? (
+            {cargandoFotos ? (
+              <p className="text-white/30 text-sm text-center py-6">Cargando fotos…</p>
+            ) : fotos.length === 0 ? (
               <label className="flex flex-col items-center justify-center py-10 rounded-2xl cursor-pointer"
                      style={{border:'1px dashed rgba(255,255,255,0.15)', background:'rgba(255,255,255,0.03)'}}>
                 <Camera size={28} className="text-white/25 mb-2" />
@@ -393,7 +419,7 @@ export default function DetalleCliente() {
                 <label className="rounded-2xl aspect-square flex items-center justify-center cursor-pointer"
                        style={{border:'1px dashed rgba(255,255,255,0.15)', background:'rgba(255,255,255,0.03)'}}>
                   <Camera size={20} className="text-white/25" />
-                  <input type="file" accept="image/*" className="hidden" onChange={agregarFoto} />
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={agregarFoto} />
                 </label>
               </div>
             )}

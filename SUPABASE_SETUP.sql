@@ -63,3 +63,18 @@ CREATE POLICY "auth_all_clientes"  ON clientes  FOR ALL USING (auth.role() = 'au
 CREATE POLICY "auth_all_ingresos"  ON ingresos  FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "auth_all_citas"     ON citas     FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "auth_all_egresos"   ON egresos   FOR ALL USING (auth.role() = 'authenticated');
+
+-- 7. Bucket para fotos de cortes
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('fotos-cortes', 'fotos-cortes', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- 8. Políticas de storage (solo usuarios autenticados)
+CREATE POLICY "auth_insert_fotos" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'fotos-cortes' AND auth.role() = 'authenticated');
+
+CREATE POLICY "auth_select_fotos" ON storage.objects
+  FOR SELECT USING (bucket_id = 'fotos-cortes' AND auth.role() = 'authenticated');
+
+CREATE POLICY "auth_delete_fotos" ON storage.objects
+  FOR DELETE USING (bucket_id = 'fotos-cortes' AND auth.role() = 'authenticated');
