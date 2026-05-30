@@ -36,7 +36,7 @@ export default function Dashboard() {
 
   // ── Cita rápida ──
   const [citaRapida, setCitaRapida] = useState(false)
-  const [qForm, setQForm] = useState({ cliente_id: '', cliente_nombre: '', fecha: hoyStr, hora: '', motivo: 'Corte de cabello' })
+  const [qForm, setQForm] = useState({ cliente_id: '', cliente_nombre: '', fecha: hoyStr, hora: '', motivos: ['Corte de cabello'] })
   const [qBusqueda, setQBusqueda] = useState('')
   const [qMostrarBuscador, setQMostrarBuscador] = useState(true)
   const [qGuardando, setQGuardando] = useState(false)
@@ -48,7 +48,7 @@ export default function Dashboard() {
   }).slice(0, 5)
 
   const abrirCitaRapida = () => {
-    setQForm({ cliente_id: '', cliente_nombre: '', fecha: hoyStr, hora: '', motivo: 'Corte de cabello' })
+    setQForm({ cliente_id: '', cliente_nombre: '', fecha: hoyStr, hora: '', motivos: ['Corte de cabello'] })
     setQBusqueda('')
     setQMostrarBuscador(true)
     setQError('')
@@ -60,7 +60,7 @@ export default function Dashboard() {
     if (!qForm.hora) { setQError('Ingresa la hora'); return }
     setQGuardando(true)
     try {
-      await agregarCita({ cliente_id: qForm.cliente_id, cliente_nombre: qForm.cliente_nombre, fecha: qForm.fecha, hora: qForm.hora, motivo: qForm.motivo, notas: '' })
+      await agregarCita({ cliente_id: qForm.cliente_id, cliente_nombre: qForm.cliente_nombre, fecha: qForm.fecha, hora: qForm.hora, motivo: qForm.motivos.join(' + ') || 'Sin especificar', notas: '' })
       setCitaRapida(false)
     } catch (err) {
       setQError(err.message || 'Error al agendar')
@@ -612,10 +612,13 @@ export default function Dashboard() {
               <label className="glass-label">Servicio</label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {MOTIVOS_RAPIDOS.map(m => {
-                  const activo = qForm.motivo === m
+                  const activo = qForm.motivos.includes(m)
                   return (
                     <button key={m} type="button"
-                            onClick={() => setQForm(f => ({...f, motivo: m}))}
+                            onClick={() => setQForm(f => {
+                              const ya = f.motivos.includes(m)
+                              return { ...f, motivos: ya ? f.motivos.filter(x => x !== m) : [...f.motivos, m] }
+                            })}
                             className="px-3 py-1.5 rounded-2xl text-xs font-semibold transition-all"
                             style={{
                               background: activo ? 'rgba(217,119,6,0.45)' : 'rgba(255,255,255,0.08)',
