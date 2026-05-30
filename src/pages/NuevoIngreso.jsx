@@ -323,7 +323,7 @@ export default function NuevoIngreso() {
                     {tasaEur ? (
                       <>
                         <p className="text-amber-200 text-sm font-bold">Bs {montoBsAuto}</p>
-                        <p className="text-white/35 text-xs">Tasa EUR: {parseFloat(tasaEur.toFixed(4))}</p>
+                        <p className="text-white/35 text-xs">Tasa BCV: {parseFloat(tasaEur.toFixed(4))}</p>
                       </>
                     ) : (
                       <p className="text-white/40 text-xs">Sin tasa disponible</p>
@@ -410,7 +410,7 @@ export default function NuevoIngreso() {
                         {tasaEur ? (
                           <>
                             <p className="text-amber-200 text-sm font-bold">Bs {montoBs2Auto}</p>
-                            <p className="text-white/35 text-xs">Tasa EUR: {parseFloat(tasaEur.toFixed(4))}</p>
+                            <p className="text-white/35 text-xs">Tasa BCV: {parseFloat(tasaEur.toFixed(4))}</p>
                           </>
                         ) : (
                           <p className="text-white/40 text-xs">Sin tasa disponible</p>

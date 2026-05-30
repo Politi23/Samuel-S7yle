@@ -8,11 +8,11 @@ async function getTasasFromDolarApi() {
   })
   if (!res.ok) throw new Error(`dolarapi status ${res.status}`)
   const data = await res.json()
-  const usdItem = data.find(d => d.nombre?.toLowerCase().includes('lar') && d.fuente === 'oficial')
+  const usdItem = data.find(d => d.moneda === 'USD' && d.fuente === 'oficial')
   const eurItem = data.find(d => d.nombre?.toLowerCase().includes('euro'))
   const usd = usdItem?.promedio ?? null
-  const eur = eurItem?.promedio ?? null
-  if (!usd && !eur) throw new Error('dolarapi: no se encontraron tasas')
+  const eur = eurItem?.promedio ?? usd
+  if (!usd) throw new Error('dolarapi: no se encontraron tasas')
   return { usd, eur, fecha: usdItem?.fechaActualizacion?.slice(0, 10) ?? null }
 }
 
