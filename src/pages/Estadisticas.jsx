@@ -30,7 +30,7 @@ export default function Estadisticas() {
     const del = ingresos.filter(i => i.fecha && i.fecha.slice(0, 7) === mesStr)
     const total = del.reduce((a, i) => {
       if (i.moneda === 'USD') return a + Number(i.monto)
-      const t = Number(i.tasa_bcv)
+      const t = Number(i.tasa_bcv) || tasaHoy
       return t ? a + Number(i.monto) / t : a
     }, 0)
     const citasDelMes = citas.filter(c => c.fecha && c.fecha.slice(0, 7) === mesStr).length
@@ -46,7 +46,7 @@ export default function Estadisticas() {
     if (!i.cliente_id) return
     if (!clienteMap[i.cliente_id]) clienteMap[i.cliente_id] = { nombre: i.cliente_nombre || '', visitas: 0, total: 0 }
     clienteMap[i.cliente_id].visitas++
-    const t = Number(i.tasa_bcv)
+    const t = Number(i.tasa_bcv) || tasaHoy
     clienteMap[i.cliente_id].total += i.moneda === 'USD' ? Number(i.monto) : (t ? Number(i.monto) / t : 0)
   })
   const topClientes = Object.entries(clienteMap).sort((a, b) => b[1].visitas - a[1].visitas).slice(0, 5)
@@ -59,7 +59,7 @@ export default function Estadisticas() {
     partes.forEach(s => {
       if (!servMap[s]) servMap[s] = { count: 0, total: 0 }
       servMap[s].count++
-      const t = Number(i.tasa_bcv)
+      const t = Number(i.tasa_bcv) || tasaHoy
       servMap[s].total += i.moneda === 'USD' ? Number(i.monto) : (t ? Number(i.monto) / t : 0)
     })
   })
@@ -90,7 +90,7 @@ export default function Estadisticas() {
   const citasAtend  = citasMes.filter(c => c.estado === 'atendida').length
   const totalMesUsd = ingresosMes.reduce((a, i) => {
     if (i.moneda === 'USD') return a + Number(i.monto)
-    const t = Number(i.tasa_bcv)
+    const t = Number(i.tasa_bcv) || tasaHoy
     return t ? a + Number(i.monto) / t : a
   }, 0)
   const promPorCita = citasAtend > 0 ? totalMesUsd / citasAtend : 0

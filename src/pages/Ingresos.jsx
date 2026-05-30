@@ -138,7 +138,7 @@ export default function Ingresos() {
   const totalUSD = ingresosMes.filter(i => i.moneda === 'USD').reduce((a, i) => a + Number(i.monto), 0)
   const totalBs  = ingresosMes.filter(i => i.moneda === 'Bs').reduce((a, i) => a + Number(i.monto), 0)
   const bsEnEur = ingresosMes.filter(i => i.moneda === 'Bs').reduce((a, i) => {
-    const t = Number(i.tasa_bcv)
+    const t = Number(i.tasa_bcv) || tasaHoy
     return t ? a + Number(i.monto) / t : a
   }, 0)
   const totalEnUsd = totalUSD + bsEnEur
@@ -146,7 +146,7 @@ export default function Ingresos() {
   const totalUSDanio = ingresosAnio.filter(i => i.moneda === 'USD').reduce((a, i) => a + Number(i.monto), 0)
   const totalBsanio  = ingresosAnio.filter(i => i.moneda === 'Bs').reduce((a, i) => a + Number(i.monto), 0)
   const bsEnEurAnio  = ingresosAnio.filter(i => i.moneda === 'Bs').reduce((a, i) => {
-    const t = Number(i.tasa_bcv)
+    const t = Number(i.tasa_bcv) || tasaHoy
     return t ? a + Number(i.monto) / t : a
   }, 0)
   const totalEnUsdAnio = totalUSDanio + bsEnEurAnio
@@ -158,7 +158,7 @@ export default function Ingresos() {
       const key = i.metodo_pago || 'Sin método'
       if (!map[key]) map[key] = { count: 0, totalUsd: 0, esUsd: METODOS_USD.includes(i.metodo_pago) }
       map[key].count++
-      const t = Number(i.tasa_bcv)
+      const t = Number(i.tasa_bcv) || tasaHoy
       map[key].totalUsd += i.moneda === 'USD' ? Number(i.monto) : (t ? Number(i.monto) / t : 0)
     })
     return Object.entries(map).sort((a, b) => b[1].totalUsd - a[1].totalUsd)
@@ -170,7 +170,7 @@ export default function Ingresos() {
       const key = i.concepto || 'Sin servicio'
       if (!map[key]) map[key] = { count: 0, totalUsd: 0 }
       map[key].count++
-      const t = Number(i.tasa_bcv)
+      const t = Number(i.tasa_bcv) || tasaHoy
       map[key].totalUsd += i.moneda === 'USD' ? Number(i.monto) : (t ? Number(i.monto) / t : 0)
     })
     return Object.entries(map).sort((a, b) => b[1].totalUsd - a[1].totalUsd)
