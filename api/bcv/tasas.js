@@ -2,18 +2,19 @@ let cache = null
 const CACHE_TTL_MS = 60 * 60 * 1000
 
 async function getTasasFromDolarApi() {
-  const res = await fetch('https://ve.dolarapi.com/v1/dolares', {
-    headers: { 'Accept': 'application/json' },
-    signal: AbortSignal.timeout(10000),
-  })
-  if (!res.ok) throw new Error(`dolarapi status ${res.status}`)
-  const data = await res.json()
-  const usdItem = data.find(d => d.moneda === 'USD' && d.fuente === 'oficial')
-  const eurItem = data.find(d => d.nombre?.toLowerCase().includes('euro'))
+  const [resUsd, resEur] = await Promise.all([
+    fetch('https://ve.dolarapi.com/v1/dolares', { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(10000) }),
+    fetch('https://ve.dolarapi.com/v1/euros',   { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(10000) }),
+  ])
+  if (!resUsd.ok) throw new Error(`dolarapi USD status ${resUsd.status}`)
+  const dataUsd = await resUsd.json()
+  const dataEur = resEur.ok ? await resEur.json() : []
+  const usdItem = dataUsd.find(d => d.moneda === 'USD' && d.fuente === 'oficial')
+  const eurItem = dataEur.find(d => d.moneda === 'EUR' && d.fuente === 'oficial')
   const usd = usdItem?.promedio ?? null
-  const eur = eurItem?.promedio ?? usd
-  if (!usd) throw new Error('dolarapi: no se encontraron tasas')
-  return { usd, eur, fecha: usdItem?.fechaActualizacion?.slice(0, 10) ?? null }
+  const eur = eurItem?.promedio ?? null
+  if (!usd && !eur) throw new Error('dolarapi: no se encontraron tasas')
+  return { usd, eur, fecha: (eurItem ?? usdItem)?.fechaActualizacion?.slice(0, 10) ?? null }
 }
 
 async function getTasasFromBCV() {
