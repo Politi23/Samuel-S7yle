@@ -63,11 +63,11 @@ async function getTasas(force = false) {
 
   let data
   try {
-    data = await getTasasFromDolarApi()
+    data = await getTasasFromBCV()
   } catch (e1) {
-    console.warn('[BCV] dolarapi falló, intentando BCV directo:', e1.message)
+    console.warn('[BCV] scraping falló, usando dolarapi:', e1.message)
     try {
-      data = await getTasasFromBCV()
+      data = await getTasasFromDolarApi()
     } catch (e2) {
       if (cache) return { ...cache.data, cached: true, stale: true }
       throw new Error('No se pudo obtener la tasa de cambio')
