@@ -358,7 +358,7 @@ export default function Ingresos() {
                   <p className="text-white font-semibold truncate">{i.cliente_nombre}</p>
                   <p className="text-white/55 text-sm truncate">{i.concepto}</p>
                   <p className="text-white/30 text-xs">{formatFecha(i.fecha)} · {i.metodo_pago}</p>
-                  {i.moneda === 'Bs' && (() => { const t = Number(i.tasa_bcv); return t ? <p className="text-amber-300/50 text-xs">Tasa EUR: {parseFloat(t.toFixed(4))} · ≈€{(Number(i.monto)/t).toFixed(2)}</p> : null })()}
+                  {i.moneda === 'Bs' && (() => { const t = Number(i.tasa_bcv) || tasaHoy; return t ? <p className="text-amber-300/50 text-xs">Tasa EUR: {parseFloat(t.toFixed(4))} · ≈€{(Number(i.monto)/t).toFixed(2)}</p> : null })()}
                   {i.notas ? <p className="text-white/40 text-xs truncate">{i.notas}</p> : null}
                 </div>
                 <div className="text-right flex-shrink-0 space-y-1">
