@@ -120,14 +120,16 @@ export default function NuevoIngreso() {
   const esBs2 = pago2.moneda === 'Bs'
   const metodoBs = METODOS_BS.includes(form.metodo_pago)
   const metodoBs2 = METODOS_BS.includes(pago2.metodo)
-  const soloUsd = ['Efectivo USD', 'Zelle', 'PayPal'].includes(form.metodo_pago)
-  const soloUsd2 = ['Efectivo USD', 'Zelle', 'PayPal'].includes(pago2.metodo)
+  const soloUsd = METODOS_USD.includes(form.metodo_pago)
+  const soloUsd2 = METODOS_USD.includes(pago2.metodo)
   const mostrarConvBs = !esBs && metodoBs && monto1 > 0
   const mostrarConvBs2 = pago2Activo && !esBs2 && metodoBs2 && monto2 > 0
   const montoBsAuto = tasaEur ? (monto1 * tasaEur).toFixed(2) : null
   const montoBs2Auto = tasaEur ? (monto2 * tasaEur).toFixed(2) : null
   const montoEur = esBs && tasaEur && monto1 > 0 ? (monto1 / tasaEur).toFixed(2) : null
-  const totalUSD = pago2Activo ? (monto1 + monto2).toFixed(2) : null
+  const monto1EnUSD = esBs && tasaEur ? monto1 / tasaEur : monto1
+  const monto2EnUSD = pago2Activo && esBs2 && tasaEur ? monto2 / tasaEur : monto2
+  const totalUSD = pago2Activo ? (monto1EnUSD + monto2EnUSD).toFixed(2) : null
 
   const toggleServicio = (s) => {
     setForm(prev => {
@@ -153,7 +155,9 @@ export default function NuevoIngreso() {
     let montoFinal, monedaFinal, metodoPagoFinal, involucraBS
 
     if (pago2Activo) {
-      montoFinal = monto1 + monto2
+      const m1usd = esBs && tasaEur ? monto1 / tasaEur : monto1
+      const m2usd = esBs2 && tasaEur ? monto2 / tasaEur : monto2
+      montoFinal = m1usd + m2usd
       monedaFinal = 'USD'
       metodoPagoFinal = `${form.metodo_pago} + ${pago2.metodo}`
       involucraBS = esBs || metodoBs || esBs2 || metodoBs2
