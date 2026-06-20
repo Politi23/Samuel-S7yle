@@ -10,6 +10,7 @@ export function AppProvider({ children }) {
   const [egresos,   setEgresos]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState(null)
+  const [userId,    setUserId]    = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -20,6 +21,7 @@ export function AppProvider({ children }) {
         if (!cancelled) setLoading(false)
         return
       }
+      if (!cancelled) setUserId(session.user.id)
       try {
         const [resClientes, resIngresos, resCitas, resEgresos] = await Promise.all([
           supabase.from('clientes').select('*').order('created_at', { ascending: false }).limit(5000),
@@ -57,6 +59,7 @@ export function AppProvider({ children }) {
         setError(null)
         cargarDatos()
       } else if (event === 'SIGNED_OUT') {
+        setUserId(null)
         setClientes([])
         setIngresos([])
         setCitas([])
@@ -73,7 +76,7 @@ export function AppProvider({ children }) {
 
   // ── Clientes ───────────────────────────────────────────────
   const agregarCliente = async (datos) => {
-    const { data, error } = await supabase.from('clientes').insert(datos).select().single()
+    const { data, error } = await supabase.from('clientes').insert({ ...datos, user_id: userId }).select().single()
     if (error) throw error
     setClientes(prev => [data, ...prev])
     return data
@@ -95,7 +98,7 @@ export function AppProvider({ children }) {
 
   // ── Ingresos ───────────────────────────────────────────────
   const agregarIngreso = async (datos) => {
-    const { data, error } = await supabase.from('ingresos').insert(datos).select().single()
+    const { data, error } = await supabase.from('ingresos').insert({ ...datos, user_id: userId }).select().single()
     if (error) throw error
     setIngresos(prev => [data, ...prev])
     return data
@@ -115,7 +118,7 @@ export function AppProvider({ children }) {
 
   // ── Citas ──────────────────────────────────────────────────
   const agregarCita = async (datos) => {
-    const { data, error } = await supabase.from('citas').insert(datos).select().single()
+    const { data, error } = await supabase.from('citas').insert({ ...datos, user_id: userId }).select().single()
     if (error) throw error
     setCitas(prev => [data, ...prev])
     return data
@@ -135,7 +138,7 @@ export function AppProvider({ children }) {
 
   // ── Egresos ────────────────────────────────────────────────
   const agregarEgreso = async (datos) => {
-    const { data, error } = await supabase.from('egresos').insert(datos).select().single()
+    const { data, error } = await supabase.from('egresos').insert({ ...datos, user_id: userId }).select().single()
     if (error) throw error
     setEgresos(prev => [data, ...prev])
     return data
