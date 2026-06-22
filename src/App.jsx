@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
+import PasswordGate from './components/PasswordGate'
 
 const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Clientes       = lazy(() => import('./pages/Clientes'))
@@ -38,7 +39,7 @@ export default function App() {
             <Route path="egresos/:id/editar" element={<NuevoEgreso />} />
             <Route path="tasa" element={<Tasa />} />
             <Route path="estadisticas" element={<Estadisticas />} />
-            <Route path="disponibilidad" element={<HorarioAdmin />} />
+            <Route path="disponibilidad" element={<PasswordGate><HorarioAdmin /></PasswordGate>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
