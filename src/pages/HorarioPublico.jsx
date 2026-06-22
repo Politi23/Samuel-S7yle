@@ -257,9 +257,6 @@ export default function HorarioPublico() {
             </div>
           </section>
 
-          <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.22)', fontSize: 11, margin: 0, lineHeight: 1.5 }}>
-            Cupos por orden de llegada · Actualizado por el barbero
-          </p>
         </div>
       </main>
     </>
