@@ -30,17 +30,29 @@ export default function HorarioPublico() {
   const [ultimaAct, setUltimaAct] = useState(null)
 
   useEffect(() => {
-    supabase
-      .from('disponibilidad')
-      .select('*')
-      .eq('user_id', 'c2e70010-2fe5-44d7-b14f-56488ed17a8f')
-      .order('orden', { ascending: true })
-      .then(({ data }) => {
-        setDias((data || []).map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })))
-        const ts = data?.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)
-        setUltimaAct(ts)
-        setCargando(false)
-      })
+    const BARBER_ID = 'c2e70010-2fe5-44d7-b14f-56488ed17a8f'
+
+    const cargar = () =>
+      supabase
+        .from('disponibilidad')
+        .select('*')
+        .eq('user_id', BARBER_ID)
+        .order('orden', { ascending: true })
+        .then(({ data }) => {
+          setDias((data || []).map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })))
+          const ts = data?.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)
+          setUltimaAct(ts)
+          setCargando(false)
+        })
+
+    cargar()
+
+    const channel = supabase
+      .channel('horario_publico')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'disponibilidad' }, cargar)
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
   }, [])
 
   const hoy = diaActualVE()
