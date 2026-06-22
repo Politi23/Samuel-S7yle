@@ -199,7 +199,7 @@ export default function HorarioAdmin() {
     const dia = dias[idx]
     setGuardando(idx)
     const libres = (dia.slots || []).filter(s => !s.ocupado).length
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from('disponibilidad')
       .update({
         abierto:     dia.abierto,
@@ -209,7 +209,9 @@ export default function HorarioAdmin() {
         updated_at:  new Date().toISOString(),
       })
       .eq('id', dia.id)
-    if (error) toast('Error al guardar', 'error')
+      .select('id')
+    if (error) toast(`Error: ${error.message}`, 'error')
+    else if (!updated || updated.length === 0) toast('No se guardó — verifica la conexión', 'error')
     else toast(`${dia.dia} guardado ✓`, 'success')
     setGuardando(null)
   }, [dias, toast])
