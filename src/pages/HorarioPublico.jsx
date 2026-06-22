@@ -93,6 +93,7 @@ export default function HorarioPublico() {
     supabase
       .from('disponibilidad')
       .select('*')
+      .eq('user_id', 'c2e70010-2fe5-44d7-b14f-56488ed17a8f')
       .order('orden', { ascending: true })
       .then(({ data }) => {
         setDias((data || []).map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })))
