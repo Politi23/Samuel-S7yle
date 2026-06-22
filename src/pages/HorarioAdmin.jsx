@@ -209,10 +209,21 @@ export default function HorarioAdmin() {
         updated_at:  new Date().toISOString(),
       })
       .eq('id', dia.id)
-      .select('id')
-    if (error) toast(`Error: ${error.message}`, 'error')
-    else if (!updated || updated.length === 0) toast('No se guardó — verifica la conexión', 'error')
-    else toast(`${dia.dia} guardado ✓`, 'success')
+      .select('id, slots, cupos')
+
+    if (error) {
+      toast(`Error: ${error.message}`, 'error')
+    } else if (!updated || updated.length === 0) {
+      toast('No se guardó — sin filas actualizadas', 'error')
+    } else {
+      const enDB = Array.isArray(updated[0].slots) ? updated[0].slots.length : '?'
+      toast(`${dia.dia} guardado ✓ — ${enDB} turno(s) en DB`, 'success')
+      // Sincronizar local state con lo que devuelve la DB
+      setDias(prev => prev.map((d, i) => i === idx
+        ? { ...d, ...updated[0], slots: Array.isArray(updated[0].slots) ? updated[0].slots : [] }
+        : d
+      ))
+    }
     setGuardando(null)
   }, [dias, toast])
 

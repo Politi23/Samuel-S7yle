@@ -47,12 +47,19 @@ export default function HorarioPublico() {
 
     cargar()
 
+    // Realtime: actualiza al instante cuando el barbero guarda
     const channel = supabase
       .channel('horario_publico')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'disponibilidad' }, cargar)
       .subscribe()
 
-    return () => supabase.removeChannel(channel)
+    // Fallback: refresca cada 20s por si el realtime no dispara
+    const intervalo = setInterval(cargar, 20000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(intervalo)
+    }
   }, [])
 
   const hoy = diaActualVE()
