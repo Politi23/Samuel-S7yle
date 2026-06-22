@@ -12,9 +12,9 @@ function getEstado(dia) {
 
 const CFG = {
   disponible: { color: '#34d399', bg: 'rgba(52,211,153,0.12)', Icon: CheckCircle2 },
-  pocos:      { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  Icon: AlertCircle  },
-  lleno:      { color: '#f87171', bg: 'rgba(248,113,113,0.12)', Icon: XCircle      },
-  cerrado:    { color: 'rgba(255,255,255,0.22)', bg: 'transparent', Icon: XCircle  },
+  pocos: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', Icon: AlertCircle },
+  lleno: { color: '#f87171', bg: 'rgba(248,113,113,0.12)', Icon: XCircle },
+  cerrado: { color: 'rgba(255,255,255,0.22)', bg: 'transparent', Icon: XCircle },
 }
 
 function tiempoDesde(ts) {
@@ -90,7 +90,7 @@ export default function HorarioPublico() {
                 fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1,
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
               }}>
-                Samuel S7tyle
+                Samuel S7yle
               </h1>
               <p style={{ margin: '5px 0 0', color: 'rgba(255,255,255,0.38)', fontSize: 13, letterSpacing: '0.01em' }}>
                 Puerto Cabello, Venezuela
@@ -121,80 +121,80 @@ export default function HorarioPublico() {
             <div>
               {cargando
                 ? Array.from({ length: 7 }).map((_, i) => (
-                    <div key={i} style={{
-                      padding: '14px 18px',
-                      borderBottom: i < 6 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    }}>
-                      <div style={{ width: 72, height: 14, borderRadius: 7, background: 'rgba(255,255,255,0.07)' }} />
-                      <div style={{ width: 80, height: 26, borderRadius: 20, background: 'rgba(255,255,255,0.07)' }} />
-                    </div>
-                  ))
+                  <div key={i} style={{
+                    padding: '14px 18px',
+                    borderBottom: i < 6 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <div style={{ width: 72, height: 14, borderRadius: 7, background: 'rgba(255,255,255,0.07)' }} />
+                    <div style={{ width: 80, height: 26, borderRadius: 20, background: 'rgba(255,255,255,0.07)' }} />
+                  </div>
+                ))
                 : dias.map((dia, i) => {
-                    const estado = getEstado(dia)
-                    const cfg = CFG[estado]
-                    const esHoy = dia.dia.toLowerCase() === hoy.toLowerCase()
+                  const estado = getEstado(dia)
+                  const cfg = CFG[estado]
+                  const esHoy = dia.dia.toLowerCase() === hoy.toLowerCase()
 
-                    return (
-                      <div key={dia.id} style={{
-                        padding: esHoy ? '16px 18px' : '13px 18px',
-                        borderBottom: i < dias.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        background: esHoy ? 'rgba(217,119,6,0.09)' : 'transparent',
-                        transition: 'background 0.2s',
-                      }}>
-                        {/* Día + horario */}
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                            {esHoy && (
-                              <span style={{
-                                width: 6, height: 6, borderRadius: '50%',
-                                background: '#fbbf24',
-                                boxShadow: '0 0 6px rgba(251,191,36,0.7)',
-                                flexShrink: 0,
-                                display: 'inline-block',
-                              }} />
-                            )}
+                  return (
+                    <div key={dia.id} style={{
+                      padding: esHoy ? '16px 18px' : '13px 18px',
+                      borderBottom: i < dias.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      background: esHoy ? 'rgba(217,119,6,0.09)' : 'transparent',
+                      transition: 'background 0.2s',
+                    }}>
+                      {/* Día + horario */}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          {esHoy && (
                             <span style={{
-                              color: esHoy ? '#fde68a' : dia.abierto ? '#fff' : 'rgba(255,255,255,0.28)',
-                              fontSize: esHoy ? 15 : 14,
-                              fontWeight: esHoy ? 700 : 500,
-                              letterSpacing: esHoy ? '-0.01em' : 0,
-                            }}>
-                              {dia.dia}
+                              width: 6, height: 6, borderRadius: '50%',
+                              background: '#fbbf24',
+                              boxShadow: '0 0 6px rgba(251,191,36,0.7)',
+                              flexShrink: 0,
+                              display: 'inline-block',
+                            }} />
+                          )}
+                          <span style={{
+                            color: esHoy ? '#fde68a' : dia.abierto ? '#fff' : 'rgba(255,255,255,0.28)',
+                            fontSize: esHoy ? 15 : 14,
+                            fontWeight: esHoy ? 700 : 500,
+                            letterSpacing: esHoy ? '-0.01em' : 0,
+                          }}>
+                            {dia.dia}
+                          </span>
+                          {esHoy && (
+                            <span style={{ color: 'rgba(251,191,36,0.55)', fontSize: 11, fontWeight: 500 }}>
+                              · hoy
                             </span>
-                            {esHoy && (
-                              <span style={{ color: 'rgba(251,191,36,0.55)', fontSize: 11, fontWeight: 500 }}>
-                                · hoy
-                              </span>
-                            )}
-                          </div>
-                          {dia.abierto && (
-                            <div style={{ color: 'rgba(255,255,255,0.30)', fontSize: 11, marginTop: 2 }}>
-                              {dia.hora_inicio} – {dia.hora_fin}
-                              {dia.nota ? ` · ${dia.nota}` : ''}
-                            </div>
                           )}
                         </div>
-
-                        {/* Badge de estado */}
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: 5,
-                          padding: '5px 10px', borderRadius: 20,
-                          background: cfg.bg,
-                          border: `1px solid ${cfg.color}30`,
-                          flexShrink: 0,
-                        }}>
-                          <cfg.Icon size={11} color={cfg.color} strokeWidth={2.5} />
-                          <span style={{ color: cfg.color, fontSize: 12, fontWeight: 600, lineHeight: 1 }}>
-                            {estado === 'disponible' ? `${dia.cupos} cupo${dia.cupos !== 1 ? 's' : ''}` :
-                             estado === 'pocos'      ? `${dia.cupos} cupo${dia.cupos !== 1 ? 's' : ''}` :
-                             estado === 'lleno'      ? 'Sin cupos' : 'Cerrado'}
-                          </span>
-                        </div>
+                        {dia.abierto && (
+                          <div style={{ color: 'rgba(255,255,255,0.30)', fontSize: 11, marginTop: 2 }}>
+                            {dia.hora_inicio} – {dia.hora_fin}
+                            {dia.nota ? ` · ${dia.nota}` : ''}
+                          </div>
+                        )}
                       </div>
-                    )
-                  })
+
+                      {/* Badge de estado */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        padding: '5px 10px', borderRadius: 20,
+                        background: cfg.bg,
+                        border: `1px solid ${cfg.color}30`,
+                        flexShrink: 0,
+                      }}>
+                        <cfg.Icon size={11} color={cfg.color} strokeWidth={2.5} />
+                        <span style={{ color: cfg.color, fontSize: 12, fontWeight: 600, lineHeight: 1 }}>
+                          {estado === 'disponible' ? `${dia.cupos} cupo${dia.cupos !== 1 ? 's' : ''}` :
+                            estado === 'pocos' ? `${dia.cupos} cupo${dia.cupos !== 1 ? 's' : ''}` :
+                              estado === 'lleno' ? 'Sin cupos' : 'Cerrado'}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })
               }
             </div>
           </section>
