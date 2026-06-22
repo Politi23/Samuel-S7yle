@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../context/ToastContext'
 import PageHeader from '../components/PageHeader'
-import { Copy, CheckCircle2, ToggleLeft, ToggleRight, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  Copy, CheckCircle2, ToggleLeft, ToggleRight,
+  Plus, Trash2, ChevronDown, ChevronUp,
+  RotateCcw, AlertTriangle,
+} from 'lucide-react'
 
 const DIAS_DEFAULT = [
   { dia: 'Lunes',     orden: 0, abierto: true,  cupos: 0, slots: [] },
@@ -27,6 +31,14 @@ function crearSlot(ultimoFin = '09:00') {
   return { id: crypto.randomUUID(), inicio: ultimoFin, fin, ocupado: false }
 }
 
+function haysolapamiento(slots) {
+  const sorted = [...slots].sort((a, b) => a.inicio.localeCompare(b.inicio))
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (sorted[i].fin > sorted[i + 1].inicio) return true
+  }
+  return false
+}
+
 const T = {
   input: {
     background: 'rgba(255,255,255,0.08)',
@@ -47,11 +59,13 @@ const T = {
 
 /* ── Fila de un turno ────────────────────────────────────── */
 function SlotRow({ slot, onChange, onDelete }) {
+  const invalido = slot.inicio >= slot.fin
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 6,
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: invalido ? 'rgba(248,113,113,0.07)' : 'rgba(255,255,255,0.04)',
+      border: `1px solid ${invalido ? 'rgba(248,113,113,0.30)' : 'rgba(255,255,255,0.08)'}`,
       borderRadius: 12, padding: '8px 10px',
     }}>
       <input
@@ -60,7 +74,7 @@ function SlotRow({ slot, onChange, onDelete }) {
         onChange={e => onChange('inicio', e.target.value)}
         style={T.input}
       />
-      <span style={{ color: 'rgba(255,255,255,0.30)', fontSize: 13, flexShrink: 0 }}>→</span>
+      <span style={{ color: invalido ? '#f87171' : 'rgba(255,255,255,0.30)', fontSize: 13, flexShrink: 0 }}>→</span>
       <input
         type="time"
         value={slot.fin}
@@ -135,6 +149,8 @@ export default function HorarioAdmin() {
   const [guardando, setGuardando] = useState(null)
   const [copiado, setCopiado]     = useState(false)
   const [expandido, setExpandido] = useState({})
+  const [modalReset, setModalReset] = useState(false)
+  const [reiniciando, setReiniciando] = useState(false)
 
   const urlPublica = `${window.location.origin}/horario`
   const hoy = diaActualVE()
@@ -142,29 +158,38 @@ export default function HorarioAdmin() {
   /* ── carga ──────────────────────────────────────────────── */
   useEffect(() => {
     async function cargar() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const { data } = await supabase
-        .from('disponibilidad')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('orden', { ascending: true })
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
 
-      const normalizar = d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })
-
-      if (!data || data.length === 0) {
-        const { data: ins } = await supabase
+        const { data, error } = await supabase
           .from('disponibilidad')
-          .insert(DIAS_DEFAULT.map(d => ({ ...d, user_id: session.user.id })))
-          .select()
-        setDias((ins || []).map(normalizar))
-      } else {
-        setDias(data.map(normalizar))
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('orden', { ascending: true })
+
+        if (error) throw error
+
+        const normalizar = d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })
+
+        if (!data || data.length === 0) {
+          const { data: ins, error: insErr } = await supabase
+            .from('disponibilidad')
+            .insert(DIAS_DEFAULT.map(d => ({ ...d, user_id: session.user.id })))
+            .select()
+          if (insErr) throw insErr
+          setDias((ins || []).map(normalizar))
+        } else {
+          setDias(data.map(normalizar))
+        }
+      } catch {
+        toast('Error al cargar el horario', 'error')
+      } finally {
+        setCargando(false)
       }
-      setCargando(false)
     }
     cargar()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── mutaciones ─────────────────────────────────────────── */
   const set = useCallback((idx, campo, valor) => {
@@ -197,14 +222,27 @@ export default function HorarioAdmin() {
   /* ── guardar ────────────────────────────────────────────── */
   const guardar = useCallback(async (idx) => {
     const dia = dias[idx]
+    const slots = dia.slots || []
+
+    const slotInvalido = slots.find(s => s.inicio >= s.fin)
+    if (slotInvalido) {
+      toast(`Turno inválido: ${slotInvalido.inicio} → ${slotInvalido.fin}. El inicio debe ser antes que el fin.`, 'error')
+      return
+    }
+
+    if (haysolapamiento(slots)) {
+      toast('Hay turnos que se solapan. Revisa los horarios.', 'error')
+      return
+    }
+
     setGuardando(idx)
-    const libres = (dia.slots || []).filter(s => !s.ocupado).length
+    const libres = slots.filter(s => !s.ocupado).length
     const { data: updated, error } = await supabase
       .from('disponibilidad')
       .update({
         abierto:     dia.abierto,
         cupos:       libres,
-        slots:       dia.slots || [],
+        slots,
         hora_inicio: null,
         updated_at:  new Date().toISOString(),
       })
@@ -225,6 +263,28 @@ export default function HorarioAdmin() {
     setGuardando(null)
   }, [dias, toast])
 
+  /* ── reiniciar semana ───────────────────────────────────── */
+  const reiniciarSemana = useCallback(async () => {
+    setReiniciando(true)
+    try {
+      await Promise.all(
+        dias.map(dia =>
+          supabase
+            .from('disponibilidad')
+            .update({ slots: [], cupos: 0, updated_at: new Date().toISOString() })
+            .eq('id', dia.id)
+        )
+      )
+      setDias(prev => prev.map(d => ({ ...d, slots: [], cupos: 0 })))
+      toast('Semana reiniciada ✓', 'success')
+    } catch {
+      toast('Error al reiniciar la semana', 'error')
+    } finally {
+      setReiniciando(false)
+      setModalReset(false)
+    }
+  }, [dias, toast])
+
   /* ── copiar URL ─────────────────────────────────────────── */
   const copiarUrl = () => {
     navigator.clipboard.writeText(urlPublica)
@@ -232,8 +292,8 @@ export default function HorarioAdmin() {
     setTimeout(() => setCopiado(false), 2200)
   }
 
-  const idxHoy  = dias.findIndex(d => d.dia.toLowerCase() === hoy.toLowerCase())
-  const diaHoy  = idxHoy >= 0 ? dias[idxHoy] : null
+  const idxHoy    = dias.findIndex(d => d.dia.toLowerCase() === hoy.toLowerCase())
+  const diaHoy    = idxHoy >= 0 ? dias[idxHoy] : null
   const otrosDias = dias.filter((_, i) => i !== idxHoy)
 
   /* ── render ─────────────────────────────────────────────── */
@@ -266,7 +326,6 @@ export default function HorarioAdmin() {
             background: 'rgba(217,119,6,0.07)',
             display: 'flex', flexDirection: 'column', gap: 16,
           }}>
-            {/* Encabezado día */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{
@@ -296,7 +355,6 @@ export default function HorarioAdmin() {
               </div>
             </div>
 
-            {/* Turnos */}
             {diaHoy.abierto ? (
               <SlotsList
                 dia={diaHoy} idx={idxHoy}
@@ -328,10 +386,10 @@ export default function HorarioAdmin() {
             </div>
 
             {otrosDias.map((dia) => {
-              const idx     = dias.indexOf(dia)
-              const isExp   = !!expandido[idx]
-              const slots   = dia.slots || []
-              const libres  = slots.filter(s => !s.ocupado).length
+              const idx       = dias.indexOf(dia)
+              const isExp     = !!expandido[idx]
+              const slots     = dia.slots || []
+              const libres    = slots.filter(s => !s.ocupado).length
               const toggleExp = () => setExpandido(prev => ({ ...prev, [idx]: !isExp }))
 
               return (
@@ -339,7 +397,6 @@ export default function HorarioAdmin() {
                   borderBottom: otrosDias.indexOf(dia) < otrosDias.length - 1
                     ? '1px solid rgba(255,255,255,0.06)' : 'none',
                 }}>
-                  {/* Fila resumen */}
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '12px 14px',
@@ -373,7 +430,6 @@ export default function HorarioAdmin() {
                     </button>
                   </div>
 
-                  {/* Turnos expandidos */}
                   {isExp && (
                     <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {dia.abierto ? (
@@ -400,7 +456,85 @@ export default function HorarioAdmin() {
             })}
           </div>
         )}
+
+        {/* Reiniciar semana */}
+        {!cargando && dias.length > 0 && (
+          <button
+            onClick={() => setModalReset(true)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px 20px', borderRadius: 16, cursor: 'pointer', width: '100%',
+              border: '1px solid rgba(248,113,113,0.20)',
+              background: 'rgba(248,113,113,0.06)',
+              color: 'rgba(248,113,113,0.60)',
+              fontSize: 13, fontWeight: 600,
+            }}>
+            <RotateCcw size={15} />
+            Reiniciar semana
+          </button>
+        )}
       </div>
+
+      {/* Modal confirmación */}
+      {modalReset && (
+        <div
+          onClick={() => !reiniciando && setModalReset(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100,
+            background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}>
+          <div
+            className="glass-card"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 320, width: '100%', display: 'flex', flexDirection: 'column', gap: 22 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(248,113,113,0.12)',
+                border: '1px solid rgba(248,113,113,0.25)',
+              }}>
+                <AlertTriangle size={26} color="#f87171" />
+              </div>
+              <div>
+                <p style={{ color: '#fff', fontWeight: 700, fontSize: 18, margin: 0, letterSpacing: '-0.02em' }}>
+                  ¿Reiniciar semana?
+                </p>
+                <p style={{ color: 'rgba(255,255,255,0.48)', fontSize: 14, margin: '8px 0 0', lineHeight: 1.5 }}>
+                  Se borrarán todos los turnos de todos los días. Esta acción no se puede deshacer.
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setModalReset(false)}
+                disabled={reiniciando}
+                style={{
+                  flex: 1, padding: '13px', borderRadius: 14,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.06)', color: '#fff',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  opacity: reiniciando ? 0.5 : 1,
+                }}>
+                Cancelar
+              </button>
+              <button
+                onClick={reiniciarSemana}
+                disabled={reiniciando}
+                style={{
+                  flex: 1, padding: '13px', borderRadius: 14, border: 'none',
+                  background: 'rgba(248,113,113,0.20)', color: '#f87171',
+                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  opacity: reiniciando ? 0.6 : 1,
+                }}>
+                {reiniciando ? 'Borrando…' : 'Sí, borrar todo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

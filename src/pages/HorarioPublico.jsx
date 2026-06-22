@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Scissors, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
+import { Scissors, Clock, CheckCircle2, XCircle, AlertCircle, WifiOff } from 'lucide-react'
 
 function tiempoDesde(ts) {
   if (!ts) return null
@@ -38,26 +38,35 @@ const WaIcon = () => (
 export default function HorarioPublico() {
   const [dias, setDias]           = useState([])
   const [cargando, setCargando]   = useState(true)
+  const [error, setError]         = useState(false)
   const [ultimaAct, setUltimaAct] = useState(null)
 
   useEffect(() => {
-    const cargar = () =>
-      supabase
-        .from('disponibilidad')
-        .select('*')
-        .order('updated_at', { ascending: false })
-        .then(({ data }) => {
-          if (!data || data.length === 0) { setCargando(false); return }
-          const barberId = data[0].user_id
-          const filas = data
-            .filter(d => d.user_id === barberId)
-            .sort((a, b) => a.orden - b.orden)
-            .map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] }))
-          setDias(filas)
-          const ts = filas.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)
-          setUltimaAct(ts)
-          setCargando(false)
-        })
+    const cargar = async () => {
+      try {
+        const { data, error: err } = await supabase
+          .from('disponibilidad')
+          .select('*')
+          .order('updated_at', { ascending: false })
+
+        if (err) throw err
+        if (!data || data.length === 0) { setCargando(false); return }
+
+        const barberId = data[0].user_id
+        const filas = data
+          .filter(d => d.user_id === barberId)
+          .sort((a, b) => a.orden - b.orden)
+          .map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] }))
+        setDias(filas)
+        const ts = filas.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)
+        setUltimaAct(ts)
+        setError(false)
+      } catch {
+        setError(true)
+      } finally {
+        setCargando(false)
+      }
+    }
 
     cargar()
 
@@ -135,7 +144,17 @@ export default function HorarioPublico() {
             </div>
 
             <div>
-              {cargando
+              {error ? (
+                <div style={{
+                  padding: '32px 20px', display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', gap: 10, textAlign: 'center',
+                }}>
+                  <WifiOff size={28} color="rgba(255,255,255,0.22)" />
+                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.40)', fontSize: 14 }}>
+                    No se pudo cargar el horario
+                  </p>
+                </div>
+              ) : cargando
                 ? Array.from({ length: 7 }).map((_, i) => (
                   <div key={i} style={{
                     padding: '14px 18px',
