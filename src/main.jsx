@@ -6,9 +6,13 @@ import { ToastProvider } from './context/ToastContext'
 import App from './App'
 import Login from './pages/Login'
 import LoadingScreen from './components/LoadingScreen'
+import HorarioPublico from './pages/HorarioPublico'
 import './index.css'
 
 function Root() {
+  // Ruta pública: no requiere autenticación
+  if (window.location.pathname === '/horario') return <HorarioPublico />
+
   const { autenticado, cargando } = useAuth()
   const { loading, error } = useApp()
   if (cargando) return <LoadingScreen />

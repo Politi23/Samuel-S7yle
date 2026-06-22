@@ -1,13 +1,14 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Users, BarChart2, CalendarDays, DollarSign, ArrowDownCircle } from 'lucide-react'
+import { Home, Users, BarChart2, CalendarDays, DollarSign, ArrowDownCircle, CalendarCheck } from 'lucide-react'
 
 const links = [
-  { to: '/',            label: 'Inicio',   Icon: Home },
-  { to: '/clientes',    label: 'Clientes', Icon: Users },
-  { to: '/citas',       label: 'Citas',    Icon: CalendarDays },
-  { to: '/ingresos',    label: 'Ingresos', Icon: DollarSign },
-  { to: '/egresos',     label: 'Egresos',  Icon: ArrowDownCircle },
-  { to: '/estadisticas',label: 'Stats',    Icon: BarChart2 },
+  { to: '/',               label: 'Inicio',    Icon: Home },
+  { to: '/clientes',       label: 'Clientes',  Icon: Users },
+  { to: '/citas',          label: 'Citas',     Icon: CalendarDays },
+  { to: '/ingresos',       label: 'Ingresos',  Icon: DollarSign },
+  { to: '/egresos',        label: 'Egresos',   Icon: ArrowDownCircle },
+  { to: '/estadisticas',   label: 'Stats',     Icon: BarChart2 },
+  { to: '/disponibilidad', label: 'Horario',   Icon: CalendarCheck },
 ]
 
 export default function BottomNav() {

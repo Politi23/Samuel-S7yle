@@ -14,6 +14,7 @@ const Tasa           = lazy(() => import('./pages/Tasa'))
 const Egresos        = lazy(() => import('./pages/Egresos'))
 const NuevoEgreso    = lazy(() => import('./pages/NuevoEgreso'))
 const Estadisticas   = lazy(() => import('./pages/Estadisticas'))
+const HorarioAdmin   = lazy(() => import('./pages/HorarioAdmin'))
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="egresos/:id/editar" element={<NuevoEgreso />} />
             <Route path="tasa" element={<Tasa />} />
             <Route path="estadisticas" element={<Estadisticas />} />
+            <Route path="disponibilidad" element={<HorarioAdmin />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
