@@ -66,7 +66,12 @@ export default function HorarioAdmin() {
     setGuardando(idx)
     const { error } = await supabase
       .from('disponibilidad')
-      .update({ abierto: dia.abierto, cupos: dia.cupos, updated_at: new Date().toISOString() })
+      .update({
+        abierto: dia.abierto,
+        cupos: dia.cupos,
+        hora_inicio: dia.hora_inicio || null,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', dia.id)
     if (error) toast('Error al guardar', 'error')
     else toast(`${dia.dia} guardado ✓`, 'success')
@@ -179,6 +184,20 @@ export default function HorarioAdmin() {
               </div>
             )}
 
+            {/* Horario libre */}
+            <input
+              value={diaHoy.hora_inicio || ''}
+              onChange={e => set(idxHoy, 'hora_inicio', e.target.value)}
+              placeholder="Horario de hoy… ej: 10am - 7pm"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)',
+                borderRadius: 12, padding: '11px 14px',
+                color: '#fff', fontSize: 14, outline: 'none',
+                fontFamily: 'inherit',
+              }}
+            />
+
             <button
               className="glass-btn-primary"
               onClick={() => guardar(idxHoy)}
@@ -201,71 +220,91 @@ export default function HorarioAdmin() {
               const idx = dias.indexOf(dia)
               return (
                 <div key={dia.id || dia.dia} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
+                  display: 'flex', flexDirection: 'column',
                   padding: '11px 14px',
                   borderBottom: otrosDias.indexOf(dia) < otrosDias.length - 1
                     ? '1px solid rgba(255,255,255,0.06)' : 'none',
                   opacity: dia.abierto ? 1 : 0.45,
+                  gap: 8,
                 }}>
-                  {/* Día */}
-                  <span style={{ color: '#fff', fontSize: 14, fontWeight: 600, minWidth: 88 }}>
-                    {dia.dia}
-                  </span>
+                  {/* Fila principal */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {/* Día */}
+                    <span style={{ color: '#fff', fontSize: 14, fontWeight: 600, minWidth: 88 }}>
+                      {dia.dia}
+                    </span>
 
-                  {/* Toggle */}
-                  <button
-                    onClick={() => set(idx, 'abierto', !dia.abierto)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0 }}
-                    aria-label={dia.abierto ? 'Cerrar' : 'Abrir'}>
-                    {dia.abierto
-                      ? <ToggleRight size={24} color="#fbbf24" />
-                      : <ToggleLeft  size={24} color="rgba(255,255,255,0.22)" />}
-                  </button>
+                    {/* Toggle */}
+                    <button
+                      onClick={() => set(idx, 'abierto', !dia.abierto)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0 }}
+                      aria-label={dia.abierto ? 'Cerrar' : 'Abrir'}>
+                      {dia.abierto
+                        ? <ToggleRight size={24} color="#fbbf24" />
+                        : <ToggleLeft  size={24} color="rgba(255,255,255,0.22)" />}
+                    </button>
 
-                  {/* Cupos */}
-                  {dia.abierto && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}>
-                      <button
-                        onClick={() => set(idx, 'cupos', Math.max(0, dia.cupos - 1))}
-                        style={{
-                          width: 32, height: 32, borderRadius: 10,
-                          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                          color: '#fff', fontSize: 18, fontWeight: 300,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        }}>−</button>
-                      <span style={{
-                        minWidth: 28, textAlign: 'center', fontSize: 18, fontWeight: 700,
-                        color: dia.cupos === 0 ? '#f87171' : dia.cupos <= 2 ? '#fbbf24' : '#34d399',
+                    {/* Cupos */}
+                    {dia.abierto && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}>
+                        <button
+                          onClick={() => set(idx, 'cupos', Math.max(0, dia.cupos - 1))}
+                          style={{
+                            width: 32, height: 32, borderRadius: 10,
+                            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                            color: '#fff', fontSize: 18, fontWeight: 300,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                          }}>−</button>
+                        <span style={{
+                          minWidth: 28, textAlign: 'center', fontSize: 18, fontWeight: 700,
+                          color: dia.cupos === 0 ? '#f87171' : dia.cupos <= 2 ? '#fbbf24' : '#34d399',
+                        }}>
+                          {dia.cupos}
+                        </span>
+                        <button
+                          onClick={() => set(idx, 'cupos', dia.cupos + 1)}
+                          style={{
+                            width: 32, height: 32, borderRadius: 10,
+                            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                            color: '#fff', fontSize: 18, fontWeight: 300,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                          }}>+</button>
+                      </div>
+                    )}
+                    {!dia.abierto && <div style={{ flex: 1 }} />}
+
+                    {/* Guardar */}
+                    <button
+                      onClick={() => guardar(idx)}
+                      disabled={guardando === idx}
+                      aria-label="Guardar"
+                      style={{
+                        width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+                        background: guardando === idx ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.14)',
+                        color: guardando === idx ? '#34d399' : 'rgba(255,255,255,0.50)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', transition: 'all 0.15s',
                       }}>
-                        {dia.cupos}
-                      </span>
-                      <button
-                        onClick={() => set(idx, 'cupos', dia.cupos + 1)}
-                        style={{
-                          width: 32, height: 32, borderRadius: 10,
-                          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                          color: '#fff', fontSize: 18, fontWeight: 300,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                        }}>+</button>
-                    </div>
-                  )}
-                  {!dia.abierto && <div style={{ flex: 1 }} />}
+                      <Check size={15} strokeWidth={2.5} />
+                    </button>
+                  </div>
 
-                  {/* Guardar */}
-                  <button
-                    onClick={() => guardar(idx)}
-                    disabled={guardando === idx}
-                    aria-label="Guardar"
-                    style={{
-                      width: 36, height: 36, borderRadius: 11, flexShrink: 0,
-                      background: guardando === idx ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.08)',
-                      border: '1px solid rgba(255,255,255,0.14)',
-                      color: guardando === idx ? '#34d399' : 'rgba(255,255,255,0.50)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}>
-                    <Check size={15} strokeWidth={2.5} />
-                  </button>
+                  {/* Horario libre — solo días abiertos */}
+                  {dia.abierto && (
+                    <input
+                      value={dia.hora_inicio || ''}
+                      onChange={e => set(idx, 'hora_inicio', e.target.value)}
+                      placeholder="Horario… ej: 10am - 6pm"
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)',
+                        borderRadius: 10, padding: '8px 12px',
+                        color: '#fff', fontSize: 13, outline: 'none',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  )}
                 </div>
               )
             })}
