@@ -2,16 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../context/ToastContext'
 import PageHeader from '../components/PageHeader'
-import { Copy, CheckCircle2, ToggleLeft, ToggleRight, Check } from 'lucide-react'
+import { Copy, CheckCircle2, ToggleLeft, ToggleRight, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 
 const DIAS_DEFAULT = [
-  { dia: 'Lunes',     orden: 0, abierto: true,  cupos: 8 },
-  { dia: 'Martes',    orden: 1, abierto: true,  cupos: 8 },
-  { dia: 'Miércoles', orden: 2, abierto: true,  cupos: 8 },
-  { dia: 'Jueves',    orden: 3, abierto: true,  cupos: 8 },
-  { dia: 'Viernes',   orden: 4, abierto: true,  cupos: 8 },
-  { dia: 'Sábado',    orden: 5, abierto: true,  cupos: 6 },
-  { dia: 'Domingo',   orden: 6, abierto: false, cupos: 0 },
+  { dia: 'Lunes',     orden: 0, abierto: true,  cupos: 0, slots: [] },
+  { dia: 'Martes',    orden: 1, abierto: true,  cupos: 0, slots: [] },
+  { dia: 'Miércoles', orden: 2, abierto: true,  cupos: 0, slots: [] },
+  { dia: 'Jueves',    orden: 3, abierto: true,  cupos: 0, slots: [] },
+  { dia: 'Viernes',   orden: 4, abierto: true,  cupos: 0, slots: [] },
+  { dia: 'Sábado',    orden: 5, abierto: true,  cupos: 0, slots: [] },
+  { dia: 'Domingo',   orden: 6, abierto: false, cupos: 0, slots: [] },
 ]
 
 function diaActualVE() {
@@ -20,12 +20,121 @@ function diaActualVE() {
     .replace(/^\w/, c => c.toUpperCase())
 }
 
+function crearSlot(ultimoFin = '09:00') {
+  const [h, m] = ultimoFin.split(':').map(Number)
+  const finMin = h * 60 + m + 60
+  const fin = `${String(Math.floor(finMin / 60) % 24).padStart(2, '0')}:${String(finMin % 60).padStart(2, '0')}`
+  return { id: crypto.randomUUID(), inicio: ultimoFin, fin, ocupado: false }
+}
+
+const T = {
+  input: {
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.14)',
+    borderRadius: 10,
+    padding: '9px 8px',
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: 600,
+    outline: 'none',
+    flex: 1,
+    minWidth: 0,
+    fontFamily: 'inherit',
+    colorScheme: 'dark',
+    textAlign: 'center',
+  },
+}
+
+/* ── Fila de un turno ────────────────────────────────────── */
+function SlotRow({ slot, onChange, onDelete }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: 12, padding: '8px 10px',
+    }}>
+      <input
+        type="time"
+        value={slot.inicio}
+        onChange={e => onChange('inicio', e.target.value)}
+        style={T.input}
+      />
+      <span style={{ color: 'rgba(255,255,255,0.30)', fontSize: 13, flexShrink: 0 }}>→</span>
+      <input
+        type="time"
+        value={slot.fin}
+        onChange={e => onChange('fin', e.target.value)}
+        style={T.input}
+      />
+      <button
+        onClick={() => onChange('ocupado', !slot.ocupado)}
+        style={{
+          padding: '7px 10px', borderRadius: 9, border: 'none', cursor: 'pointer',
+          fontSize: 11, fontWeight: 700, flexShrink: 0, lineHeight: 1,
+          background: slot.ocupado ? 'rgba(248,113,113,0.15)' : 'rgba(52,211,153,0.12)',
+          color: slot.ocupado ? '#f87171' : '#34d399',
+          whiteSpace: 'nowrap',
+        }}>
+        {slot.ocupado ? 'Ocupado' : 'Libre'}
+      </button>
+      <button
+        onClick={onDelete}
+        aria-label="Eliminar turno"
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'rgba(255,255,255,0.22)', padding: 4, flexShrink: 0,
+          display: 'flex', alignItems: 'center',
+        }}>
+        <Trash2 size={15} />
+      </button>
+    </div>
+  )
+}
+
+/* ── Lista de turnos + botón agregar ─────────────────────── */
+function SlotsList({ dia, idx, addSlot, updateSlot, deleteSlot }) {
+  const slots = dia.slots || []
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+      {slots.length === 0 && (
+        <div style={{ color: 'rgba(255,255,255,0.28)', fontSize: 13, textAlign: 'center', padding: '6px 0' }}>
+          Sin turnos — agrega el primero
+        </div>
+      )}
+      {slots.map(slot => (
+        <SlotRow
+          key={slot.id}
+          slot={slot}
+          onChange={(campo, valor) => updateSlot(idx, slot.id, campo, valor)}
+          onDelete={() => deleteSlot(idx, slot.id)}
+        />
+      ))}
+      <button
+        onClick={() => addSlot(idx)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          padding: '9px 14px', borderRadius: 11,
+          border: '1px dashed rgba(255,255,255,0.18)',
+          background: 'none', cursor: 'pointer',
+          color: 'rgba(255,255,255,0.40)', fontSize: 13, fontWeight: 600,
+          marginTop: 2,
+        }}>
+        <Plus size={14} />
+        Agregar turno
+      </button>
+    </div>
+  )
+}
+
+/* ── Página ──────────────────────────────────────────────── */
 export default function HorarioAdmin() {
   const toast = useToast()
-  const [dias, setDias]       = useState([])
-  const [cargando, setCargando] = useState(true)
+  const [dias, setDias]           = useState([])
+  const [cargando, setCargando]   = useState(true)
   const [guardando, setGuardando] = useState(null)
-  const [copiado, setCopiado] = useState(false)
+  const [copiado, setCopiado]     = useState(false)
+  const [expandido, setExpandido] = useState({})
 
   const urlPublica = `${window.location.origin}/horario`
   const hoy = diaActualVE()
@@ -41,36 +150,63 @@ export default function HorarioAdmin() {
         .eq('user_id', session.user.id)
         .order('orden', { ascending: true })
 
+      const normalizar = d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })
+
       if (!data || data.length === 0) {
         const { data: ins } = await supabase
           .from('disponibilidad')
           .insert(DIAS_DEFAULT.map(d => ({ ...d, user_id: session.user.id })))
           .select()
-        setDias(ins || [])
+        setDias((ins || []).map(normalizar))
       } else {
-        setDias(data)
+        setDias(data.map(normalizar))
       }
       setCargando(false)
     }
     cargar()
   }, [])
 
-  /* ── mutación local ─────────────────────────────────────── */
+  /* ── mutaciones ─────────────────────────────────────────── */
   const set = useCallback((idx, campo, valor) => {
     setDias(prev => prev.map((d, i) => i === idx ? { ...d, [campo]: valor } : d))
   }, [])
 
-  /* ── guardar fila ───────────────────────────────────────── */
+  const addSlot = useCallback((idx) => {
+    setDias(prev => prev.map((d, i) => {
+      if (i !== idx) return d
+      const slots = d.slots || []
+      const ultimo = slots[slots.length - 1]
+      return { ...d, slots: [...slots, crearSlot(ultimo?.fin)] }
+    }))
+  }, [])
+
+  const updateSlot = useCallback((idx, slotId, campo, valor) => {
+    setDias(prev => prev.map((d, i) => {
+      if (i !== idx) return d
+      return { ...d, slots: d.slots.map(s => s.id === slotId ? { ...s, [campo]: valor } : s) }
+    }))
+  }, [])
+
+  const deleteSlot = useCallback((idx, slotId) => {
+    setDias(prev => prev.map((d, i) => {
+      if (i !== idx) return d
+      return { ...d, slots: d.slots.filter(s => s.id !== slotId) }
+    }))
+  }, [])
+
+  /* ── guardar ────────────────────────────────────────────── */
   const guardar = useCallback(async (idx) => {
     const dia = dias[idx]
     setGuardando(idx)
+    const libres = (dia.slots || []).filter(s => !s.ocupado).length
     const { error } = await supabase
       .from('disponibilidad')
       .update({
-        abierto: dia.abierto,
-        cupos: dia.cupos,
-        hora_inicio: dia.hora_inicio || null,
-        updated_at: new Date().toISOString(),
+        abierto:     dia.abierto,
+        cupos:       libres,
+        slots:       dia.slots || [],
+        hora_inicio: null,
+        updated_at:  new Date().toISOString(),
       })
       .eq('id', dia.id)
     if (error) toast('Error al guardar', 'error')
@@ -85,9 +221,8 @@ export default function HorarioAdmin() {
     setTimeout(() => setCopiado(false), 2200)
   }
 
-  /* ── índice del día de hoy ──────────────────────────────── */
-  const idxHoy = dias.findIndex(d => d.dia.toLowerCase() === hoy.toLowerCase())
-  const diaHoy = idxHoy >= 0 ? dias[idxHoy] : null
+  const idxHoy  = dias.findIndex(d => d.dia.toLowerCase() === hoy.toLowerCase())
+  const diaHoy  = idxHoy >= 0 ? dias[idxHoy] : null
   const otrosDias = dias.filter((_, i) => i !== idxHoy)
 
   /* ── render ─────────────────────────────────────────────── */
@@ -97,7 +232,7 @@ export default function HorarioAdmin() {
 
       <div style={{ padding: '12px 16px 40px', display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 480, margin: '0 auto' }}>
 
-        {/* ── Copiar link ──────────────────────────────────── */}
+        {/* Copiar link */}
         <button
           onClick={copiarUrl}
           style={{
@@ -111,16 +246,16 @@ export default function HorarioAdmin() {
           {copiado ? '¡Link copiado!' : 'Copiar link para compartir'}
         </button>
 
-        {/* ── HOY ──────────────────────────────────────────── */}
+        {/* HOY */}
         {cargando ? (
-          <div className="glass-card" style={{ height: 180 }} />
+          <div className="glass-card" style={{ height: 240 }} />
         ) : diaHoy ? (
           <div className="glass-card" style={{
             border: '1px solid rgba(217,119,6,0.38)',
             background: 'rgba(217,119,6,0.07)',
             display: 'flex', flexDirection: 'column', gap: 16,
           }}>
-            {/* Nombre del día */}
+            {/* Encabezado día */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{
@@ -135,68 +270,32 @@ export default function HorarioAdmin() {
                   hoy
                 </span>
               </div>
-              {/* Toggle abierto/cerrado */}
-              <button
-                onClick={() => set(idxHoy, 'abierto', !diaHoy.abierto)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
-                aria-label={diaHoy.abierto ? 'Marcar como cerrado' : 'Marcar como abierto'}>
-                {diaHoy.abierto
-                  ? <ToggleRight size={34} color="#fbbf24" />
-                  : <ToggleLeft  size={34} color="rgba(255,255,255,0.25)" />}
-              </button>
-            </div>
-
-            {/* Cupos — solo cuando está abierto */}
-            {diaHoy.abierto ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <button
-                  onClick={() => set(idxHoy, 'cupos', Math.max(0, diaHoy.cupos - 1))}
-                  aria-label="Restar cupo"
-                  style={{
-                    width: 56, height: 56, borderRadius: 16, flexShrink: 0,
-                    background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-                    color: '#fff', fontSize: 28, fontWeight: 300,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}>−</button>
-                <span style={{
-                  flex: 1, textAlign: 'center', fontSize: 52, fontWeight: 800,
-                  letterSpacing: '-0.04em', lineHeight: 1,
-                  color: diaHoy.cupos === 0 ? '#f87171' : diaHoy.cupos <= 2 ? '#fbbf24' : '#34d399',
-                  transition: 'color 0.2s',
-                }}>
-                  {diaHoy.cupos}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 12, color: diaHoy.abierto ? '#fbbf24' : 'rgba(255,255,255,0.30)', fontWeight: 600 }}>
+                  {diaHoy.abierto ? 'Abierto' : 'Cerrado'}
                 </span>
                 <button
-                  onClick={() => set(idxHoy, 'cupos', diaHoy.cupos + 1)}
-                  aria-label="Sumar cupo"
-                  style={{
-                    width: 56, height: 56, borderRadius: 16, flexShrink: 0,
-                    background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-                    color: '#fff', fontSize: 28, fontWeight: 300,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}>+</button>
+                  onClick={() => set(idxHoy, 'abierto', !diaHoy.abierto)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
+                  aria-label={diaHoy.abierto ? 'Marcar como cerrado' : 'Marcar como abierto'}>
+                  {diaHoy.abierto
+                    ? <ToggleRight size={34} color="#fbbf24" />
+                    : <ToggleLeft  size={34} color="rgba(255,255,255,0.25)" />}
+                </button>
               </div>
+            </div>
+
+            {/* Turnos */}
+            {diaHoy.abierto ? (
+              <SlotsList
+                dia={diaHoy} idx={idxHoy}
+                addSlot={addSlot} updateSlot={updateSlot} deleteSlot={deleteSlot}
+              />
             ) : (
-              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.30)', fontSize: 14, padding: '8px 0' }}>
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.28)', fontSize: 14, padding: '8px 0' }}>
                 Cerrado hoy
               </div>
             )}
-
-            {/* Horario libre */}
-            <input
-              value={diaHoy.hora_inicio || ''}
-              onChange={e => set(idxHoy, 'hora_inicio', e.target.value)}
-              placeholder="Horario de hoy… ej: 10am - 7pm"
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)',
-                borderRadius: 12, padding: '11px 14px',
-                color: '#fff', fontSize: 14, outline: 'none',
-                fontFamily: 'inherit',
-              }}
-            />
 
             <button
               className="glass-btn-primary"
@@ -208,7 +307,7 @@ export default function HorarioAdmin() {
           </div>
         ) : null}
 
-        {/* ── Resto de la semana ───────────────────────────── */}
+        {/* Resto de la semana */}
         {!cargando && otrosDias.length > 0 && (
           <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -216,25 +315,29 @@ export default function HorarioAdmin() {
                 Resto de la semana
               </span>
             </div>
+
             {otrosDias.map((dia) => {
-              const idx = dias.indexOf(dia)
+              const idx     = dias.indexOf(dia)
+              const isExp   = !!expandido[idx]
+              const slots   = dia.slots || []
+              const libres  = slots.filter(s => !s.ocupado).length
+              const toggleExp = () => setExpandido(prev => ({ ...prev, [idx]: !isExp }))
+
               return (
                 <div key={dia.id || dia.dia} style={{
-                  display: 'flex', flexDirection: 'column',
-                  padding: '11px 14px',
                   borderBottom: otrosDias.indexOf(dia) < otrosDias.length - 1
                     ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                  opacity: dia.abierto ? 1 : 0.45,
-                  gap: 8,
                 }}>
-                  {/* Fila principal */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {/* Día */}
+                  {/* Fila resumen */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '12px 14px',
+                    opacity: dia.abierto ? 1 : 0.45,
+                  }}>
                     <span style={{ color: '#fff', fontSize: 14, fontWeight: 600, minWidth: 88 }}>
                       {dia.dia}
                     </span>
 
-                    {/* Toggle */}
                     <button
                       onClick={() => set(idx, 'abierto', !dia.abierto)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0 }}
@@ -244,66 +347,46 @@ export default function HorarioAdmin() {
                         : <ToggleLeft  size={24} color="rgba(255,255,255,0.22)" />}
                     </button>
 
-                    {/* Cupos */}
-                    {dia.abierto && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}>
-                        <button
-                          onClick={() => set(idx, 'cupos', Math.max(0, dia.cupos - 1))}
-                          style={{
-                            width: 32, height: 32, borderRadius: 10,
-                            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                            color: '#fff', fontSize: 18, fontWeight: 300,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                          }}>−</button>
-                        <span style={{
-                          minWidth: 28, textAlign: 'center', fontSize: 18, fontWeight: 700,
-                          color: dia.cupos === 0 ? '#f87171' : dia.cupos <= 2 ? '#fbbf24' : '#34d399',
-                        }}>
-                          {dia.cupos}
-                        </span>
-                        <button
-                          onClick={() => set(idx, 'cupos', dia.cupos + 1)}
-                          style={{
-                            width: 32, height: 32, borderRadius: 10,
-                            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                            color: '#fff', fontSize: 18, fontWeight: 300,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                          }}>+</button>
-                      </div>
-                    )}
-                    {!dia.abierto && <div style={{ flex: 1 }} />}
+                    <span style={{ flex: 1, color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+                      {!dia.abierto
+                        ? 'Cerrado'
+                        : slots.length === 0
+                          ? 'Sin turnos'
+                          : `${libres} libre${libres !== 1 ? 's' : ''} · ${slots.length} turno${slots.length !== 1 ? 's' : ''}`}
+                    </span>
 
-                    {/* Guardar */}
                     <button
-                      onClick={() => guardar(idx)}
-                      disabled={guardando === idx}
-                      aria-label="Guardar"
-                      style={{
-                        width: 36, height: 36, borderRadius: 11, flexShrink: 0,
-                        background: guardando === idx ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.14)',
-                        color: guardando === idx ? '#34d399' : 'rgba(255,255,255,0.50)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', transition: 'all 0.15s',
-                      }}>
-                      <Check size={15} strokeWidth={2.5} />
+                      onClick={toggleExp}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.40)', padding: 4, display: 'flex' }}>
+                      {isExp ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </button>
                   </div>
 
-                  {/* Horario libre — solo días abiertos */}
-                  {dia.abierto && (
-                    <input
-                      value={dia.hora_inicio || ''}
-                      onChange={e => set(idx, 'hora_inicio', e.target.value)}
-                      placeholder="Horario… ej: 10am - 6pm"
-                      style={{
-                        width: '100%', boxSizing: 'border-box',
-                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)',
-                        borderRadius: 10, padding: '8px 12px',
-                        color: '#fff', fontSize: 13, outline: 'none',
-                        fontFamily: 'inherit',
-                      }}
-                    />
+                  {/* Turnos expandidos */}
+                  {isExp && (
+                    <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {dia.abierto ? (
+                        <SlotsList
+                          dia={dia} idx={idx}
+                          addSlot={addSlot} updateSlot={updateSlot} deleteSlot={deleteSlot}
+                        />
+                      ) : (
+                        <div style={{ color: 'rgba(255,255,255,0.28)', fontSize: 13, textAlign: 'center', padding: '4px 0' }}>
+                          Activa el día primero con el interruptor
+                        </div>
+                      )}
+                      <button
+                        onClick={() => guardar(idx)}
+                        disabled={guardando === idx}
+                        style={{
+                          padding: '10px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                          background: guardando === idx ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.08)',
+                          color: guardando === idx ? '#34d399' : '#fff',
+                          fontSize: 13, fontWeight: 600, opacity: guardando === idx ? 0.7 : 1,
+                        }}>
+                        {guardando === idx ? 'Guardando…' : 'Guardar'}
+                      </button>
+                    </div>
                   )}
                 </div>
               )

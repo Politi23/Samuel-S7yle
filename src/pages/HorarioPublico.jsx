@@ -2,21 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Scissors, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 
-/* ── helpers ─────────────────────────────────────────────── */
-function getEstado(dia) {
-  if (!dia.abierto) return 'cerrado'
-  if (dia.cupos === 0) return 'lleno'
-  if (dia.cupos <= 2) return 'pocos'
-  return 'disponible'
-}
-
-const CFG = {
-  disponible: { color: '#34d399', bg: 'rgba(52,211,153,0.12)', Icon: CheckCircle2 },
-  pocos: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', Icon: AlertCircle },
-  lleno: { color: '#f87171', bg: 'rgba(248,113,113,0.12)', Icon: XCircle },
-  cerrado: { color: 'rgba(255,255,255,0.22)', bg: 'transparent', Icon: XCircle },
-}
-
 function tiempoDesde(ts) {
   if (!ts) return null
   const min = Math.floor((Date.now() - new Date(ts).getTime()) / 60000)
@@ -31,11 +16,78 @@ function diaActualVE() {
     .replace(/^\w/, c => c.toUpperCase())
 }
 
-/* ── componente ──────────────────────────────────────────── */
+function fmt(hora) {
+  if (!hora) return ''
+  const [h, m] = hora.split(':').map(Number)
+  const periodo = h < 12 ? 'am' : 'pm'
+  const h12 = h % 12 || 12
+  return m === 0 ? `${h12}${periodo}` : `${h12}:${String(m).padStart(2,'0')}${periodo}`
+}
+
+function ResumenDia({ dia }) {
+  const slots = Array.isArray(dia.slots) ? dia.slots : []
+  const libres = slots.filter(s => !s.ocupado)
+
+  if (!dia.abierto) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: '5px 10px', borderRadius: 20,
+        background: 'transparent',
+        border: '1px solid rgba(255,255,255,0.10)',
+        flexShrink: 0,
+      }}>
+        <XCircle size={11} color="rgba(255,255,255,0.25)" strokeWidth={2.5} />
+        <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, fontWeight: 600, lineHeight: 1 }}>
+          Cerrado
+        </span>
+      </div>
+    )
+  }
+
+  // Sin turnos configurados — usar conteo de cupos legacy
+  if (slots.length === 0) {
+    const color  = dia.cupos === 0 ? '#f87171' : dia.cupos <= 2 ? '#fbbf24' : '#34d399'
+    const Icon   = dia.cupos === 0 ? XCircle : dia.cupos <= 2 ? AlertCircle : CheckCircle2
+    const label  = dia.cupos === 0 ? 'Sin cupos' : `${dia.cupos} cupo${dia.cupos !== 1 ? 's' : ''}`
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: '5px 10px', borderRadius: 20,
+        background: `${color}18`,
+        border: `1px solid ${color}30`,
+        flexShrink: 0,
+      }}>
+        <Icon size={11} color={color} strokeWidth={2.5} />
+        <span style={{ color, fontSize: 12, fontWeight: 600, lineHeight: 1 }}>{label}</span>
+      </div>
+    )
+  }
+
+  // Con turnos
+  const color = libres.length === 0 ? '#f87171' : libres.length <= 2 ? '#fbbf24' : '#34d399'
+  const label = libres.length === 0 ? 'Sin turnos' : `${libres.length} libre${libres.length !== 1 ? 's' : ''}`
+  const Icon  = libres.length === 0 ? XCircle : libres.length <= 2 ? AlertCircle : CheckCircle2
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 5,
+      padding: '5px 10px', borderRadius: 20,
+      background: `${color}18`,
+      border: `1px solid ${color}30`,
+      flexShrink: 0,
+    }}>
+      <Icon size={11} color={color} strokeWidth={2.5} />
+      <span style={{ color, fontSize: 12, fontWeight: 600, lineHeight: 1 }}>{label}</span>
+    </div>
+  )
+}
+
 export default function HorarioPublico() {
-  const [dias, setDias] = useState([])
+  const [dias, setDias]         = useState([])
   const [cargando, setCargando] = useState(true)
   const [ultimaAct, setUltimaAct] = useState(null)
+  const [expandido, setExpandido] = useState(null)
 
   useEffect(() => {
     supabase
@@ -43,7 +95,7 @@ export default function HorarioPublico() {
       .select('*')
       .order('orden', { ascending: true })
       .then(({ data }) => {
-        setDias(data || [])
+        setDias((data || []).map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })))
         const ts = data?.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)
         setUltimaAct(ts)
         setCargando(false)
@@ -55,12 +107,9 @@ export default function HorarioPublico() {
   return (
     <>
       <style>{`
-        @media (prefers-reduced-motion: reduce) {
-          .orb { animation: none !important; }
-        }
+        @media (prefers-reduced-motion: reduce) { .orb { animation: none !important; } }
       `}</style>
 
-      {/* Atmósfera */}
       <div className="bg-mesh" style={{ position: 'fixed', inset: 0, zIndex: -2 }} />
       <div style={{ position: 'fixed', inset: 0, zIndex: -1, overflow: 'hidden', pointerEvents: 'none' }}>
         <div className="orb orb-1" />
@@ -69,11 +118,10 @@ export default function HorarioPublico() {
         <div className="orb orb-4" />
       </div>
 
-      {/* Contenido */}
-      <main style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '40px 20px 32px' }}>
+      <main style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px 32px' }}>
         <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-          {/* Cabecera de marca */}
+          {/* Marca */}
           <header style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <div style={{
               width: 64, height: 64, borderRadius: 18,
@@ -88,36 +136,30 @@ export default function HorarioPublico() {
               <h1 style={{
                 margin: 0, color: '#fff',
                 fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1,
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
               }}>
                 Samuel S7yle
               </h1>
-              <p style={{ margin: '5px 0 0', color: 'rgba(255,255,255,0.38)', fontSize: 13, letterSpacing: '0.01em' }}>
+              <p style={{ margin: '5px 0 0', color: 'rgba(255,255,255,0.38)', fontSize: 13 }}>
                 Puerto Cabello, Venezuela
               </p>
             </div>
           </header>
 
-          {/* Tarjeta de disponibilidad */}
+          {/* Tarjeta */}
           <section className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-            {/* Encabezado tarjeta */}
             <div style={{
               padding: '14px 18px',
               borderBottom: '1px solid rgba(255,255,255,0.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>
-                Disponibilidad
-              </span>
+              <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Disponibilidad</span>
               {ultimaAct && (
                 <span style={{ color: 'rgba(255,255,255,0.30)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Clock size={11} />
-                  {tiempoDesde(ultimaAct)}
+                  <Clock size={11} /> {tiempoDesde(ultimaAct)}
                 </span>
               )}
             </div>
 
-            {/* Filas */}
             <div>
               {cargando
                 ? Array.from({ length: 7 }).map((_, i) => (
@@ -131,68 +173,82 @@ export default function HorarioPublico() {
                   </div>
                 ))
                 : dias.map((dia, i) => {
-                  const estado = getEstado(dia)
-                  const cfg = CFG[estado]
-                  const esHoy = dia.dia.toLowerCase() === hoy.toLowerCase()
+                  const esHoy    = dia.dia.toLowerCase() === hoy.toLowerCase()
+                  const slots    = dia.slots || []
+                  const libres   = slots.filter(s => !s.ocupado)
+                  const tieneSlots = slots.length > 0
+                  const isExp    = expandido === dia.id
 
                   return (
                     <div key={dia.id} style={{
-                      padding: esHoy ? '16px 18px' : '13px 18px',
                       borderBottom: i < dias.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      background: esHoy ? 'rgba(217,119,6,0.09)' : 'transparent',
-                      transition: 'background 0.2s',
                     }}>
-                      {/* Día + horario */}
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                          {esHoy && (
+                      {/* Fila principal */}
+                      <div
+                        onClick={() => tieneSlots && dia.abierto && setExpandido(isExp ? null : dia.id)}
+                        style={{
+                          padding: esHoy ? '16px 18px' : '13px 18px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          background: esHoy ? 'rgba(217,119,6,0.09)' : 'transparent',
+                          cursor: tieneSlots && dia.abierto ? 'pointer' : 'default',
+                        }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                            {esHoy && (
+                              <span style={{
+                                width: 6, height: 6, borderRadius: '50%',
+                                background: '#fbbf24', boxShadow: '0 0 6px rgba(251,191,36,0.7)',
+                                flexShrink: 0, display: 'inline-block',
+                              }} />
+                            )}
                             <span style={{
-                              width: 6, height: 6, borderRadius: '50%',
-                              background: '#fbbf24',
-                              boxShadow: '0 0 6px rgba(251,191,36,0.7)',
-                              flexShrink: 0,
-                              display: 'inline-block',
-                            }} />
-                          )}
-                          <span style={{
-                            color: esHoy ? '#fde68a' : dia.abierto ? '#fff' : 'rgba(255,255,255,0.28)',
-                            fontSize: esHoy ? 15 : 14,
-                            fontWeight: esHoy ? 700 : 500,
-                            letterSpacing: esHoy ? '-0.01em' : 0,
-                          }}>
-                            {dia.dia}
-                          </span>
-                          {esHoy && (
-                            <span style={{ color: 'rgba(251,191,36,0.55)', fontSize: 11, fontWeight: 500 }}>
-                              · hoy
+                              color: esHoy ? '#fde68a' : dia.abierto ? '#fff' : 'rgba(255,255,255,0.28)',
+                              fontSize: esHoy ? 15 : 14,
+                              fontWeight: esHoy ? 700 : 500,
+                            }}>
+                              {dia.dia}
                             </span>
+                            {esHoy && (
+                              <span style={{ color: 'rgba(251,191,36,0.55)', fontSize: 11, fontWeight: 500 }}>
+                                · hoy
+                              </span>
+                            )}
+                          </div>
+                          {tieneSlots && dia.abierto && !isExp && libres.length > 0 && (
+                            <div style={{ color: 'rgba(255,255,255,0.30)', fontSize: 11, marginTop: 3 }}>
+                              {libres.map(s => `${fmt(s.inicio)}-${fmt(s.fin)}`).join(' · ')}
+                            </div>
                           )}
                         </div>
-                        {dia.abierto && (dia.hora_inicio || dia.nota) && (
-                          <div style={{ color: 'rgba(255,255,255,0.30)', fontSize: 11, marginTop: 2 }}>
-                            {dia.hora_inicio
-                              ? dia.hora_inicio + (dia.nota ? ` · ${dia.nota}` : '')
-                              : dia.nota}
-                          </div>
-                        )}
+                        <ResumenDia dia={dia} />
                       </div>
 
-                      {/* Badge de estado */}
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 5,
-                        padding: '5px 10px', borderRadius: 20,
-                        background: cfg.bg,
-                        border: `1px solid ${cfg.color}30`,
-                        flexShrink: 0,
-                      }}>
-                        <cfg.Icon size={11} color={cfg.color} strokeWidth={2.5} />
-                        <span style={{ color: cfg.color, fontSize: 12, fontWeight: 600, lineHeight: 1 }}>
-                          {estado === 'disponible' ? `${dia.cupos} cupo${dia.cupos !== 1 ? 's' : ''}` :
-                            estado === 'pocos' ? `${dia.cupos} cupo${dia.cupos !== 1 ? 's' : ''}` :
-                              estado === 'lleno' ? 'Sin cupos' : 'Cerrado'}
-                        </span>
-                      </div>
+                      {/* Turnos expandidos */}
+                      {isExp && tieneSlots && (
+                        <div style={{
+                          padding: '0 18px 14px',
+                          display: 'flex', flexDirection: 'column', gap: 6,
+                        }}>
+                          {slots.map(slot => (
+                            <div key={slot.id} style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              padding: '8px 12px', borderRadius: 10,
+                              background: slot.ocupado ? 'rgba(248,113,113,0.06)' : 'rgba(52,211,153,0.06)',
+                              border: `1px solid ${slot.ocupado ? 'rgba(248,113,113,0.15)' : 'rgba(52,211,153,0.15)'}`,
+                            }}>
+                              <span style={{ color: slot.ocupado ? 'rgba(255,255,255,0.35)' : '#fff', fontSize: 14, fontWeight: 600 }}>
+                                {fmt(slot.inicio)} — {fmt(slot.fin)}
+                              </span>
+                              <span style={{
+                                fontSize: 11, fontWeight: 700,
+                                color: slot.ocupado ? '#f87171' : '#34d399',
+                              }}>
+                                {slot.ocupado ? 'Ocupado' : 'Libre'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 })
@@ -200,7 +256,6 @@ export default function HorarioPublico() {
             </div>
           </section>
 
-          {/* Footer */}
           <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.22)', fontSize: 11, margin: 0, lineHeight: 1.5 }}>
             Cupos por orden de llegada · Actualizado por el barbero
           </p>
