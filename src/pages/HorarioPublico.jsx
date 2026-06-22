@@ -169,10 +169,11 @@ export default function HorarioPublico() {
                             </span>
                           )}
                         </div>
-                        {dia.abierto && (
+                        {dia.abierto && (dia.hora_inicio || dia.nota) && (
                           <div style={{ color: 'rgba(255,255,255,0.30)', fontSize: 11, marginTop: 2 }}>
-                            {dia.hora_inicio} – {dia.hora_fin}
-                            {dia.nota ? ` · ${dia.nota}` : ''}
+                            {dia.hora_inicio
+                              ? dia.hora_inicio + (dia.nota ? ` · ${dia.nota}` : '')
+                              : dia.nota}
                           </div>
                         )}
                       </div>

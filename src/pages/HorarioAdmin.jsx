@@ -262,31 +262,26 @@ export default function HorarioAdmin() {
                         style={{
                           display: 'flex', alignItems: 'center', gap: 5,
                           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                          color: 'rgba(255,255,255,0.35)', fontSize: 12,
+                          color: 'rgba(255,255,255,0.35)', fontSize: 12, textAlign: 'left',
                         }}
                         aria-expanded={estaExpandido}>
-                        <span style={{ fontWeight: 500 }}>
-                          {dia.hora_inicio}–{dia.hora_fin}
-                          {dia.nota ? ` · ${dia.nota}` : ''}
+                        <span style={{ fontWeight: 500, flex: 1 }}>
+                          {dia.hora_inicio
+                            ? dia.hora_inicio + (dia.nota ? ` · ${dia.nota}` : '')
+                            : dia.nota || 'Editar horario y nota…'}
                         </span>
                         {estaExpandido ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                       </button>
 
                       {estaExpandido && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                            <div>
-                              <label className="glass-label">Apertura</label>
-                              <input type="time" className="glass-input"
-                                     value={dia.hora_inicio}
-                                     onChange={e => set(idx, 'hora_inicio', e.target.value)} />
-                            </div>
-                            <div>
-                              <label className="glass-label">Cierre</label>
-                              <input type="time" className="glass-input"
-                                     value={dia.hora_fin}
-                                     onChange={e => set(idx, 'hora_fin', e.target.value)} />
-                            </div>
+                          <div>
+                            <label className="glass-label">Horario del día</label>
+                            <input className="glass-input"
+                                   placeholder="Ej: 10am, 12pm, 3pm · o · 9am a 2pm"
+                                   value={dia.hora_inicio || ''}
+                                   onChange={e => set(idx, 'hora_inicio', e.target.value)}
+                                   maxLength={60} />
                           </div>
                           <div>
                             <label className="glass-label">Nota <span style={{ color: 'rgba(255,255,255,0.25)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span></label>
