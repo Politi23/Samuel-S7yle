@@ -70,8 +70,8 @@ function SlotRow({ slot, onChange, onDelete }) {
       <button
         onClick={() => onChange('ocupado', !slot.ocupado)}
         style={{
-          padding: '7px 10px', borderRadius: 9, border: 'none', cursor: 'pointer',
-          fontSize: 11, fontWeight: 700, flexShrink: 0, lineHeight: 1,
+          minHeight: 44, padding: '0 12px', borderRadius: 9, border: 'none', cursor: 'pointer',
+          fontSize: 12, fontWeight: 700, flexShrink: 0, lineHeight: 1,
           background: slot.ocupado ? 'rgba(248,113,113,0.15)' : 'rgba(52,211,153,0.12)',
           color: slot.ocupado ? '#f87171' : '#34d399',
           whiteSpace: 'nowrap',
@@ -216,9 +216,7 @@ export default function HorarioAdmin() {
     } else if (!updated || updated.length === 0) {
       toast('No se guardó — sin filas actualizadas', 'error')
     } else {
-      const enDB = Array.isArray(updated[0].slots) ? updated[0].slots.length : '?'
-      toast(`${dia.dia} guardado ✓ — ${enDB} turno(s) en DB`, 'success')
-      // Sincronizar local state con lo que devuelve la DB
+      toast(`${dia.dia} guardado ✓`, 'success')
       setDias(prev => prev.map((d, i) => i === idx
         ? { ...d, ...updated[0], slots: Array.isArray(updated[0].slots) ? updated[0].slots : [] }
         : d
@@ -324,7 +322,7 @@ export default function HorarioAdmin() {
         {!cargando && otrosDias.length > 0 && (
           <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              <span style={{ color: 'rgba(255,255,255,0.40)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <span style={{ color: 'rgba(255,255,255,0.40)', fontSize: 13, fontWeight: 600 }}>
                 Resto de la semana
               </span>
             </div>
@@ -389,14 +387,10 @@ export default function HorarioAdmin() {
                         </div>
                       )}
                       <button
+                        className="glass-btn-primary"
                         onClick={() => guardar(idx)}
                         disabled={guardando === idx}
-                        style={{
-                          padding: '10px', borderRadius: 12, border: 'none', cursor: 'pointer',
-                          background: guardando === idx ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.08)',
-                          color: guardando === idx ? '#34d399' : '#fff',
-                          fontSize: 13, fontWeight: 600, opacity: guardando === idx ? 0.7 : 1,
-                        }}>
+                        style={{ opacity: guardando === idx ? 0.55 : 1, fontSize: 14 }}>
                         {guardando === idx ? 'Guardando…' : 'Guardar'}
                       </button>
                     </div>
