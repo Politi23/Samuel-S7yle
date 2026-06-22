@@ -30,17 +30,23 @@ export default function HorarioPublico() {
   const [ultimaAct, setUltimaAct] = useState(null)
 
   useEffect(() => {
-    const BARBER_ID = 'c2e70010-2fe5-44d7-b14f-56488ed17a8f'
-
     const cargar = () =>
       supabase
         .from('disponibilidad')
         .select('*')
-        .eq('user_id', BARBER_ID)
-        .order('orden', { ascending: true })
+        .order('updated_at', { ascending: false })
         .then(({ data }) => {
-          setDias((data || []).map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })))
-          const ts = data?.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)
+          if (!data || data.length === 0) { setCargando(false); return }
+
+          // Usar el user_id con la actualización más reciente (el barbero activo)
+          const barberId = data[0].user_id
+          const filas = data
+            .filter(d => d.user_id === barberId)
+            .sort((a, b) => a.orden - b.orden)
+            .map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] }))
+
+          setDias(filas)
+          const ts = filas.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)
           setUltimaAct(ts)
           setCargando(false)
         })
