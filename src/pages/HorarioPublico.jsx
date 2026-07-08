@@ -25,7 +25,7 @@ function fmt(hora) {
 }
 
 function waLink(dia, slot) {
-  const msg = `Hola Samuel! Quiero confirmar mi turno el ${dia} de ${fmt(slot.inicio)} a ${fmt(slot.fin)} 🙏`
+  const msg = `Hola Samuel! Quiero confirmar mi cupo el ${dia} de ${fmt(slot.inicio)} a ${fmt(slot.fin)} 🙏`
   return `https://wa.me/584121381501?text=${encodeURIComponent(msg)}`
 }
 
@@ -175,7 +175,7 @@ export default function HorarioPublico() {
                   if (!dia.abierto) {
                     badge = { color: 'rgba(255,255,255,0.25)', bg: 'transparent', border: 'rgba(255,255,255,0.10)', Icon: XCircle, label: 'Cerrado' }
                   } else if (slots.length > 0) {
-                    if (libres.length === 0)     badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: 'Sin turnos' }
+                    if (libres.length === 0)     badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: 'Sin cupos' }
                     else if (libres.length <= 2) badge = { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.20)',  Icon: AlertCircle,  label: `${libres.length} libre${libres.length !== 1 ? 's' : ''}` }
                     else                         badge = { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.20)',  Icon: CheckCircle2, label: `${libres.length} libres` }
                   } else {
@@ -229,7 +229,7 @@ export default function HorarioPublico() {
                         </div>
                       </div>
 
-                      {/* Turnos bookables */}
+                      {/* Cupos bookables */}
                       {dia.abierto && slots.length > 0 && (
                         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {slots.map(slot => slot.ocupado ? (

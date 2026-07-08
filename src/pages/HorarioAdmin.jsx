@@ -57,7 +57,7 @@ const T = {
   },
 }
 
-/* ── Fila de un turno ────────────────────────────────────── */
+/* ── Fila de un cupo ────────────────────────────────────── */
 function SlotRow({ slot, onChange, onDelete }) {
   const invalido = slot.inicio >= slot.fin
 
@@ -94,7 +94,7 @@ function SlotRow({ slot, onChange, onDelete }) {
       </button>
       <button
         onClick={onDelete}
-        aria-label="Eliminar turno"
+        aria-label="Eliminar cupo"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
           color: 'rgba(255,255,255,0.22)', padding: 4, flexShrink: 0,
@@ -106,14 +106,14 @@ function SlotRow({ slot, onChange, onDelete }) {
   )
 }
 
-/* ── Lista de turnos + botón agregar ─────────────────────── */
+/* ── Lista de cupos + botón agregar ─────────────────────── */
 function SlotsList({ dia, idx, addSlot, updateSlot, deleteSlot }) {
   const slots = dia.slots || []
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
       {slots.length === 0 && (
         <div style={{ color: 'rgba(255,255,255,0.28)', fontSize: 13, textAlign: 'center', padding: '6px 0' }}>
-          Sin turnos — agrega el primero
+          Sin cupos — agrega el primero
         </div>
       )}
       {slots.map(slot => (
@@ -135,7 +135,7 @@ function SlotsList({ dia, idx, addSlot, updateSlot, deleteSlot }) {
           marginTop: 2,
         }}>
         <Plus size={14} />
-        Agregar turno
+        Agregar cupo
       </button>
     </div>
   )
@@ -226,12 +226,12 @@ export default function HorarioAdmin() {
 
     const slotInvalido = slots.find(s => s.inicio >= s.fin)
     if (slotInvalido) {
-      toast(`Turno inválido: ${slotInvalido.inicio} → ${slotInvalido.fin}. El inicio debe ser antes que el fin.`, 'error')
+      toast(`Cupo inválido: ${slotInvalido.inicio} → ${slotInvalido.fin}. El inicio debe ser antes que el fin.`, 'error')
       return
     }
 
     if (haysolapamiento(slots)) {
-      toast('Hay turnos que se solapan. Revisa los horarios.', 'error')
+      toast('Hay cupos que se solapan. Revisa los horarios.', 'error')
       return
     }
 
@@ -419,8 +419,8 @@ export default function HorarioAdmin() {
                       {!dia.abierto
                         ? 'Cerrado'
                         : slots.length === 0
-                          ? 'Sin turnos'
-                          : `${libres} libre${libres !== 1 ? 's' : ''} · ${slots.length} turno${slots.length !== 1 ? 's' : ''}`}
+                          ? 'Sin cupos'
+                          : `${libres} libre${libres !== 1 ? 's' : ''} · ${slots.length} cupo${slots.length !== 1 ? 's' : ''}`}
                     </span>
 
                     <button
@@ -503,7 +503,7 @@ export default function HorarioAdmin() {
                   ¿Reiniciar semana?
                 </p>
                 <p style={{ color: 'rgba(255,255,255,0.48)', fontSize: 14, margin: '8px 0 0', lineHeight: 1.5 }}>
-                  Se borrarán todos los turnos de todos los días. Esta acción no se puede deshacer.
+                  Se borrarán todos los cupos de todos los días. Esta acción no se puede deshacer.
                 </p>
               </div>
             </div>
