@@ -1,0 +1,22 @@
+{
+  "name": "Samuel S7yle",
+  "short_name": "S7yle",
+  "description": "Gestión de barbería · Puerto Cabello",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0a00",
+  "theme_color": "#d97706",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
