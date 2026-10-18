@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import Logo from '../components/Logo'
 import { CheckCircle2, CalendarClock } from 'lucide-react'
 
 const PREFIJOS = ['0412', '0422', '0414', '0416', '0424', '0426']
@@ -100,17 +101,9 @@ export default function RegistroPublico() {
 
           {/* Marca */}
           <header style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            {/* El escudo ya dice "Samuel S7yle"; el PNG trae margen transparente, los márgenes negativos lo compensan */}
+            {/* El escudo ya dice "Samuel S7yle" */}
             <h1 style={{ margin: 0, lineHeight: 0 }}>
-              <img
-                src="/android-chrome-512x512.png"
-                alt="Samuel S7yle Barbershop"
-                width={200} height={200}
-                style={{
-                  display: 'block', width: 200, height: 200, margin: '-27px 0 -27px',
-                  filter: 'drop-shadow(0 0 24px rgba(251,191,36,0.28))',
-                }}
-              />
+              <Logo size={200} />
             </h1>
             <div>
               <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.52)', fontSize: 13 }}>

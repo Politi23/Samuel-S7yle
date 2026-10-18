@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
+import Logo from '../components/Logo'
 
 export default function Login() {
   const { login } = useAuth()
@@ -32,11 +33,9 @@ export default function Login() {
 
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto"
-               style={{background:'rgba(217,119,6,0.25)', border:'1px solid rgba(217,119,6,0.50)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.35)'}}>
-            <span className="text-white text-4xl font-bold">S</span>
-          </div>
-          <h1 className="text-white text-2xl font-bold">S7tyle</h1>
+          <h1 style={{ margin: 0, lineHeight: 0 }}>
+            <Logo size={190} />
+          </h1>
           <p className="text-white/40 text-sm">Inicia sesión para continuar</p>
         </div>
 

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { Users, DollarSign, TrendingUp, Clock, Plus, ChevronRight, LogOut, UserPlus, CalendarDays, ArrowDownCircle, AlertTriangle, Search, X, BarChart2, CheckCircle2, Gift } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE, toFechaVE } from '../lib/fecha'
+import Logo from '../components/Logo'
 
 const MOTIVOS_RAPIDOS = ['Corte de cabello','Corte + Barba','Cejas','Colorimetría','Pigmentación','Lavado','Otro']
 
@@ -198,6 +199,7 @@ export default function Dashboard() {
 
         {/* Saludo */}
         <div className="glass-card text-center py-5">
+          <Logo size={128} style={{ marginBottom: -10 }} />
           <p className="text-white/50 text-sm">Bienvenido</p>
           <h2 className="text-white text-2xl font-bold mt-0.5">Samuel</h2>
           <p className="text-white/40 text-xs mt-1 capitalize">{fechaLabel}</p>
