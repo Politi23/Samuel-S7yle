@@ -7,6 +7,7 @@ const Dashboard      = lazy(() => import('./pages/Dashboard'))
 const Clientes       = lazy(() => import('./pages/Clientes'))
 const NuevoCliente   = lazy(() => import('./pages/NuevoCliente'))
 const DetalleCliente = lazy(() => import('./pages/DetalleCliente'))
+const QrRegistro     = lazy(() => import('./pages/QrRegistro'))
 const Ingresos       = lazy(() => import('./pages/Ingresos'))
 const NuevoIngreso   = lazy(() => import('./pages/NuevoIngreso'))
 const Citas          = lazy(() => import('./pages/Citas'))
@@ -26,6 +27,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="clientes" element={<Clientes />} />
             <Route path="clientes/nuevo" element={<NuevoCliente />} />
+            <Route path="clientes/qr" element={<QrRegistro />} />
             <Route path="clientes/:id" element={<DetalleCliente />} />
             <Route path="clientes/:id/editar" element={<NuevoCliente />} />
             <Route path="ingresos" element={<Ingresos />} />

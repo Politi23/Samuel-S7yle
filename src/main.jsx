@@ -7,11 +7,14 @@ import App from './App'
 import Login from './pages/Login'
 import LoadingScreen from './components/LoadingScreen'
 import HorarioPublico from './pages/HorarioPublico'
+import RegistroPublico from './pages/RegistroPublico'
 import './index.css'
 
 function Root() {
-  // Ruta pública: no requiere autenticación
-  if (window.location.pathname === '/horario') return <HorarioPublico />
+  // Rutas públicas: no requieren autenticación
+  const ruta = window.location.pathname.replace(/\/+$/, '').toLowerCase()
+  if (ruta === '/horario') return <HorarioPublico />
+  if (ruta === '/registro') return <RegistroPublico />
 
   const { autenticado, cargando } = useAuth()
   const { loading, error } = useApp()

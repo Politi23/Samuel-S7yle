@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
-import { Search, Plus, ChevronRight, Users } from 'lucide-react'
+import { Search, Plus, ChevronRight, Users, QrCode } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 export default function Clientes() {
@@ -23,9 +23,15 @@ export default function Clientes() {
       <PageHeader
         title="Clientes"
         action={
-          <button onClick={() => navigate('/clientes/nuevo')} className="glass-btn-icon w-10 h-10 flex items-center justify-center">
-            <Plus size={19} className="text-white" />
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => navigate('/clientes/qr')} className="glass-btn-icon w-10 h-10 flex items-center justify-center"
+                    title="QR de registro" aria-label="QR de registro">
+              <QrCode size={18} className="text-white/80" />
+            </button>
+            <button onClick={() => navigate('/clientes/nuevo')} className="glass-btn-icon w-10 h-10 flex items-center justify-center">
+              <Plus size={19} className="text-white" />
+            </button>
+          </div>
         }
       />
 
@@ -63,7 +69,13 @@ export default function Clientes() {
               <span className="text-amber-300 font-bold text-sm">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold truncate">{c.nombre} {c.apellido}</p>
+              <p className="text-white font-semibold truncate">
+                {c.nombre} {c.apellido}
+                {c.origen === 'qr' && (
+                  <span className="ml-2 align-middle text-[10px] font-bold text-amber-300 px-1.5 py-0.5 rounded-md"
+                        style={{background:'rgba(251,191,36,0.12)', border:'1px solid rgba(251,191,36,0.25)'}}>QR</span>
+                )}
+              </p>
               {c.telefono && <p className="text-white/50 text-sm">{c.telefono}</p>}
             </div>
             <ChevronRight size={17} className="text-white/25 flex-shrink-0" />
