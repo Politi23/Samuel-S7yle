@@ -6,11 +6,12 @@ import { useToast } from '../context/ToastContext'
 import PageHeader from '../components/PageHeader'
 import {
   ordenarDesdeHoy, etiquetaDia, etiquetaCorta, fechaDelDia, fmtHora,
-  generarSlots, nuevoSlot, ordenarSlots, validarSlots, yaPaso,
-  estaOcupado, marcarOcupado, aplicarCitas, libresDe, aMinutos,
+  ordenarSlots, validarSlots, yaPaso,
+  estaOcupado, marcarOcupado, aplicarCitas, libresDe, aMinutos, deMinutos,
 } from '../lib/horario'
+import { ahoraVE } from '../lib/fecha'
 import {
-  Share2, ExternalLink, Plus, Trash2, Pencil, Check, Copy, Wand2,
+  Share2, ExternalLink, Plus, Trash2, Pencil, Check,
   CheckCircle2, AlertCircle, Loader2, CalendarCheck,
 } from 'lucide-react'
 
@@ -23,16 +24,6 @@ const DIAS_DEFAULT = [
   { dia: 'Sábado',    orden: 5, abierto: true,  cupos: 0, slots: [] },
   { dia: 'Domingo',   orden: 6, abierto: false, cupos: 0, slots: [] },
 ]
-const DURACIONES = [30, 45, 60, 90]
-const PREF_KEY = 'horario_generar'
-
-function leerPreferencias() {
-  try { return { desde: '09:00', hasta: '18:00', cada: 60, ...JSON.parse(localStorage.getItem(PREF_KEY) || '{}') } }
-  catch { return { desde: '09:00', hasta: '18:00', cada: 60 } }
-}
-
-const cuandoDia = (dia) => dia.relativo === 0 ? 'hoy' : dia.relativo === 1 ? 'mañana' : `el ${dia.dia.toLowerCase()}`
-
 const fechaCorta = (dia) => {
   const d = new Date(fechaDelDia(dia) + 'T12:00')
   return d.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', '')
@@ -55,17 +46,13 @@ function Interruptor({ activo, onChange, etiqueta }) {
   )
 }
 
-/* ── Botón de acción del día ─────────────────────────────────── */
-function AccionDia({ Icon, label, onClick }) {
-  return (
-    <button onClick={onClick}
-            className="flex flex-col items-center justify-center gap-1 rounded-[12px] min-h-[58px] text-[12px] font-bold text-white/80 active:scale-[0.98] transition-transform"
-            style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line)' }}>
-      <Icon size={16} className="text-amber-300" />
-      {label}
-    </button>
-  )
+/* Próxima media hora desde ahora (hora de Caracas), para sugerir el primer cupo de hoy */
+function proximaMediaHora() {
+  const min = aMinutos(ahoraVE())
+  return deMinutos(Math.min(Math.ceil((min + 1) / 30) * 30, 23 * 60))
 }
+
+const sumarMinutos = (hhmm, min) => deMinutos(Math.min(aMinutos(hhmm) + min, 23 * 60 + 59))
 
 /* ── Estado de guardado ──────────────────────────────────────── */
 function EstadoGuardado({ estado, onReintentar }) {
@@ -94,9 +81,7 @@ export default function HorarioAdmin() {
   const [selId, setSelId]         = useState(null)
   const [estados, setEstados]     = useState({})
   const [editando, setEditando]   = useState(null)
-  const [generando, setGenerando] = useState(false)
-  const [copiando, setCopiando]   = useState(null) // Set de ids destino, o null
-  const [pref, setPref]           = useState(leerPreferencias)
+  const [nuevo, setNuevo]         = useState(null) // { inicio, fin, error } mientras agrega un cupo
 
   const citasRef    = useRef(citas)
   const pendientes  = useRef({})
@@ -178,11 +163,6 @@ export default function HorarioAdmin() {
   /* ── acciones ──────────────────────────────────────────────── */
   const dia = diasVista.find(d => d.id === selId)
 
-  const guardarPref = (p) => {
-    setPref(p)
-    try { localStorage.setItem(PREF_KEY, JSON.stringify(p)) } catch { /* sin almacenamiento local */ }
-  }
-
   const toggleAbierto = () => cambiarDia(dia.id, d => ({ ...d, abierto: !d.abierto }))
 
   const toggleSlot = (slot) =>
@@ -198,32 +178,23 @@ export default function HorarioAdmin() {
     cambiarDia(dia.id, d => ({ ...d, slots: ordenarSlots(d.slots) }))
   }
 
-  const agregarSlot = () => {
+  // Sugiere el siguiente cupo: empieza donde terminó el último y dura lo mismo
+  const abrirNuevo = () => {
     const ultimo = ordenarSlots(dia.slots).at(-1)
-    const slot = nuevoSlot(ultimo ? ultimo.fin : pref.desde, pref.cada, fechaDelDia(dia))
-    if (aMinutos(slot.fin) <= aMinutos(slot.inicio)) { toast('No caben más cupos hoy', 'error'); return }
-    cambiarDia(dia.id, d => ({ ...d, slots: [...d.slots, slot] }))
+    const dur = ultimo ? aMinutos(ultimo.fin) - aMinutos(ultimo.inicio) : 60
+    const inicio = ultimo ? ultimo.fin : dia.relativo === 0 ? proximaMediaHora() : '09:00'
+    setNuevo({ inicio, fin: sumarMinutos(inicio, dur), error: '' })
   }
 
-  const slotsGenerados = dia ? generarSlots(pref.desde, pref.hasta, pref.cada, fechaDelDia(dia)) : []
-  const generar = () => {
-    if (!slotsGenerados.length) return
-    cambiarDia(dia.id, d => ({ ...d, abierto: true, slots: slotsGenerados }))
-    setGenerando(false)
-    toast(`${slotsGenerados.length} cupos creados`, 'success')
-  }
-
-  const copiar = () => {
-    const destino = copiando
-    if (!destino?.size) return
-    const nuevos = diasVista.map(d => !destino.has(d.id) ? d : {
-      ...d, abierto: true,
-      slots: dia.slots.map(s => ({ id: crypto.randomUUID(), dia_fecha: fechaDelDia(d), inicio: s.inicio, fin: s.fin, ocupado: false })),
-    })
-    setDias(nuevos)
-    nuevos.filter(d => destino.has(d.id)).forEach(d => programar(d))
-    toast(`Copiado a ${destino.size} ${destino.size === 1 ? 'día' : 'días'}`, 'success')
-    setCopiando(null)
+  const agregarSlot = () => {
+    if (!nuevo.inicio || !nuevo.fin) { setNuevo(n => ({ ...n, error: 'Pon la hora en que empieza y en la que termina' })); return }
+    const slot = { id: crypto.randomUUID(), dia_fecha: fechaDelDia(dia), inicio: nuevo.inicio, fin: nuevo.fin, ocupado: false }
+    const error = validarSlots([...dia.slots, slot])
+    if (error) { setNuevo(n => ({ ...n, error })); return }
+    cambiarDia(dia.id, d => ({ ...d, abierto: true, slots: ordenarSlots([...d.slots, slot]) }))
+    // Dejar listo el siguiente para agregar varios seguidos
+    const dur = aMinutos(slot.fin) - aMinutos(slot.inicio)
+    setNuevo({ inicio: slot.fin, fin: sumarMinutos(slot.fin, dur), error: '' })
   }
 
   const compartir = async () => {
@@ -263,7 +234,7 @@ export default function HorarioAdmin() {
       <div className="px-4 pt-4 pb-8 space-y-4">
 
         <p className="text-white/55 text-[13px] leading-relaxed">
-          Pon los cupos de cada día cuando quieras; se guarda solo. Las citas ocupan su cupo automáticamente y los cupos de días que ya pasaron se borran solos.
+          Agrega los cupos de cada día cuando sepas tu horario; se guarda solo. Las citas ocupan su cupo automáticamente y los cupos de días que ya pasaron se borran solos.
         </p>
 
         {/* ── Días ── */}
@@ -276,7 +247,7 @@ export default function HorarioAdmin() {
               const n = libresDe(d)
               return (
                 <button key={d.id} role="tab" aria-selected={sel}
-                        onClick={() => { setSelId(d.id); setEditando(null); setGenerando(false); setCopiando(null) }}
+                        onClick={() => { setSelId(d.id); setEditando(null); setNuevo(null) }}
                         className="flex flex-col items-center justify-center gap-1 rounded-[12px] py-2.5 min-h-[60px] transition-colors duration-150"
                         style={{
                           background: sel ? 'rgba(201,162,74,0.16)' : 'rgba(255,244,222,0.035)',
@@ -324,169 +295,118 @@ export default function HorarioAdmin() {
               <p className="text-white/55 text-sm mt-4 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
                 Los clientes ven este día como cerrado. Queda cerrado también las próximas semanas hasta que lo vuelvas a abrir.
               </p>
-            ) : (slots.length === 0 || generando) ? (
-              /* ── Generador ── */
-              <div className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid var(--line)' }}>
-                <p className="text-white text-sm font-bold flex items-center gap-2">
-                  <Wand2 size={15} className="text-amber-300" />
-                  {slots.length ? 'Crear los cupos de nuevo' : `¿Atiendes ${cuandoDia(dia)}? Crea sus cupos`}
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="glass-label" htmlFor="g-desde">Desde</label>
-                    <input id="g-desde" type="time" className="glass-input" value={pref.desde}
-                           onChange={e => guardarPref({ ...pref, desde: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="glass-label" htmlFor="g-hasta">Hasta</label>
-                    <input id="g-hasta" type="time" className="glass-input" value={pref.hasta}
-                           onChange={e => guardarPref({ ...pref, hasta: e.target.value })} />
-                  </div>
-                </div>
-                <div>
-                  <span className="glass-label">Cada cupo dura</span>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {DURACIONES.map(m => (
-                      <button key={m} onClick={() => guardarPref({ ...pref, cada: m })}
-                              className="rounded-[10px] py-2.5 text-[13px] font-bold transition-colors duration-150"
-                              style={{
-                                background: pref.cada === m ? 'rgba(201,162,74,0.20)' : 'rgba(255,244,222,0.04)',
-                                border: `1px solid ${pref.cada === m ? 'rgba(201,162,74,0.55)' : 'var(--line)'}`,
-                                color: pref.cada === m ? '#e2c98a' : 'rgba(247,242,232,0.70)',
-                              }}>
-                        {m < 60 ? `${m} min` : m === 60 ? '1 h' : '1 h 30'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {slots.some(s => estaOcupado(dia, s)) && generando && (
-                  <p className="text-amber-200/80 text-xs">Esto reemplaza los cupos actuales. Los que tienen cita se vuelven a ocupar solos.</p>
-                )}
-                <div className="flex gap-2">
-                  {generando && (
-                    <button onClick={() => setGenerando(false)}
-                            className="flex-1 rounded-[14px] min-h-[50px] text-sm font-bold text-white/75"
-                            style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line-strong)' }}>
-                      Cancelar
-                    </button>
-                  )}
-                  <button onClick={generar} disabled={!slotsGenerados.length} className="glass-btn-primary flex-[2]"
-                          style={!slotsGenerados.length ? { opacity: 0.5 } : undefined}>
-                    {slotsGenerados.length
-                      ? `Crear ${slotsGenerados.length} cupos · ${fmtHora(pref.desde)} a ${fmtHora(pref.hasta)}`
-                      : 'Revisa las horas'}
-                  </button>
-                </div>
-              </div>
             ) : (
               <>
+                {slots.length === 0 && !nuevo && (
+                  <p className="text-white/55 text-sm mt-4 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
+                    Todavía no hay cupos para este día. Agrégalos cuando sepas a qué hora vas a atender.
+                  </p>
+                )}
+
                 {/* ── Cupos ── */}
-                <ul className="mt-3">
-                  {slots.map((s, idx) => {
-                    const ocupado = estaOcupado(dia, s)
-                    const paso = yaPaso(dia, s)
-                    const cita = ocupado && citaDe(s)
-                    const editandoEste = editando === s.id
-                    return (
-                      <li key={s.id} className="py-2" style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
-                        {editandoEste ? (
-                          <div className="flex items-center gap-2">
-                            <input type="time" aria-label="Inicio" className="glass-input text-center" style={{ padding: '9px 6px' }}
-                                   value={s.inicio} onChange={e => editarHora(s, 'inicio', e.target.value)} />
-                            <span className="text-white/40">–</span>
-                            <input type="time" aria-label="Fin" className="glass-input text-center" style={{ padding: '9px 6px' }}
-                                   value={s.fin} onChange={e => editarHora(s, 'fin', e.target.value)} />
-                            <button onClick={terminarEdicion} aria-label="Listo"
-                                    className="glass-btn-icon w-11 h-11 flex-shrink-0 flex items-center justify-center" style={{ padding: 0 }}>
-                              <Check size={17} className="text-amber-300" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2" style={{ opacity: paso ? 0.45 : 1 }}>
-                            <span className="flex-1 min-w-0 text-white text-[15px] font-bold">
-                              {fmtHora(s.inicio)} – {fmtHora(s.fin)}
-                              {paso && <span className="ml-2 text-white/50 text-xs font-semibold">pasó</span>}
-                            </span>
-                            {cita ? (
-                              <button onClick={() => navigate(`/clientes/${cita.cliente_id}`)}
-                                      className="flex items-center gap-1.5 rounded-full px-3 min-h-[36px] text-xs font-bold max-w-[150px]"
-                                      style={{ background: 'rgba(201,162,74,0.14)', color: '#e2c98a', border: '1px solid rgba(201,162,74,0.30)' }}>
-                                <CalendarCheck size={13} className="flex-shrink-0" />
-                                <span className="truncate">{cita.cliente_nombre.split(' ')[0]}</span>
+                {slots.length > 0 && (
+                  <ul className="mt-3">
+                    {slots.map((s, idx) => {
+                      const ocupado = estaOcupado(dia, s)
+                      const paso = yaPaso(dia, s)
+                      const cita = ocupado && citaDe(s)
+                      const editandoEste = editando === s.id
+                      return (
+                        <li key={s.id} className="py-2" style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
+                          {editandoEste ? (
+                            <div className="flex items-center gap-2">
+                              <input type="time" aria-label="Empieza" className="glass-input text-center" style={{ padding: '9px 6px' }}
+                                     value={s.inicio} onChange={e => editarHora(s, 'inicio', e.target.value)} />
+                              <span className="text-white/40">–</span>
+                              <input type="time" aria-label="Termina" className="glass-input text-center" style={{ padding: '9px 6px' }}
+                                     value={s.fin} onChange={e => editarHora(s, 'fin', e.target.value)} />
+                              <button onClick={terminarEdicion} aria-label="Listo"
+                                      className="glass-btn-icon w-11 h-11 flex-shrink-0 flex items-center justify-center" style={{ padding: 0 }}>
+                                <Check size={17} className="text-amber-300" />
                               </button>
-                            ) : (
-                              <button onClick={() => toggleSlot(s)} aria-pressed={ocupado}
-                                      className="rounded-full px-3.5 min-h-[36px] text-xs font-bold transition-colors duration-150"
-                                      style={ocupado
-                                        ? { background: 'rgba(248,113,113,0.14)', color: '#fca5a5', border: '1px solid rgba(248,113,113,0.30)' }
-                                        : { background: 'rgba(124,192,147,0.12)', color: '#9fd3ae', border: '1px solid rgba(124,192,147,0.28)' }}>
-                                {ocupado ? 'Ocupado' : 'Libre'}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2" style={{ opacity: paso ? 0.45 : 1 }}>
+                              <span className="flex-1 min-w-0 text-white text-[15px] font-bold">
+                                {fmtHora(s.inicio)} – {fmtHora(s.fin)}
+                                {paso && <span className="ml-2 text-white/50 text-xs font-semibold">pasó</span>}
+                              </span>
+                              {cita ? (
+                                <button onClick={() => navigate(`/clientes/${cita.cliente_id}`)}
+                                        className="flex items-center gap-1.5 rounded-full px-3 min-h-[36px] text-xs font-bold max-w-[150px]"
+                                        style={{ background: 'rgba(201,162,74,0.14)', color: '#e2c98a', border: '1px solid rgba(201,162,74,0.30)' }}>
+                                  <CalendarCheck size={13} className="flex-shrink-0" />
+                                  <span className="truncate">{cita.cliente_nombre.split(' ')[0]}</span>
+                                </button>
+                              ) : (
+                                <button onClick={() => toggleSlot(s)} aria-pressed={ocupado}
+                                        className="rounded-full px-3.5 min-h-[36px] text-xs font-bold transition-colors duration-150"
+                                        style={ocupado
+                                          ? { background: 'rgba(248,113,113,0.14)', color: '#fca5a5', border: '1px solid rgba(248,113,113,0.30)' }
+                                          : { background: 'rgba(124,192,147,0.12)', color: '#9fd3ae', border: '1px solid rgba(124,192,147,0.28)' }}>
+                                  {ocupado ? 'Ocupado' : 'Libre'}
+                                </button>
+                              )}
+                              <button onClick={() => setEditando(s.id)} aria-label="Cambiar horas"
+                                      className="w-9 h-9 flex items-center justify-center text-white/45 active:text-white/80">
+                                <Pencil size={15} />
                               </button>
-                            )}
-                            <button onClick={() => setEditando(s.id)} aria-label="Cambiar horas"
-                                    className="w-9 h-9 flex items-center justify-center text-white/45 active:text-white/80">
-                              <Pencil size={15} />
-                            </button>
-                            <button onClick={() => borrarSlot(s)} aria-label="Eliminar cupo"
-                                    className="w-9 h-9 flex items-center justify-center text-red-400/60 active:text-red-400">
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
+                              <button onClick={() => borrarSlot(s)} aria-label="Eliminar cupo"
+                                      className="w-9 h-9 flex items-center justify-center text-red-400/60 active:text-red-400">
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
 
-                <p className="text-white/45 text-xs mt-1">
-                  Toca <span className="text-emerald-300 font-semibold">Libre</span> para marcarlo ocupado.
-                </p>
+                {slots.length > 0 && (
+                  <p className="text-white/45 text-xs mt-1">
+                    Toca <span className="text-emerald-300 font-semibold">Libre</span> para marcarlo ocupado.
+                  </p>
+                )}
 
-                {/* ── Acciones del día ── */}
-                <div className="grid grid-cols-3 gap-1.5 mt-4 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
-                  <AccionDia Icon={Plus}  label="Agregar"   onClick={agregarSlot} />
-                  <AccionDia Icon={Wand2} label="Regenerar" onClick={() => setGenerando(true)} />
-                  <AccionDia Icon={Copy}  label="Copiar a…" onClick={() => setCopiando(new Set())} />
-                </div>
-
-                {/* ── Copiar a otros días ── */}
-                {copiando && (
-                  <div className="mt-3 space-y-3">
-                    <p className="text-white text-sm font-bold">¿A qué días copias estos {slots.length} cupos?</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {diasVista.filter(d => d.id !== dia.id).map(d => {
-                        const on = copiando.has(d.id)
-                        return (
-                          <button key={d.id}
-                                  onClick={() => setCopiando(prev => { const n = new Set(prev); on ? n.delete(d.id) : n.add(d.id); return n })}
-                                  aria-pressed={on}
-                                  className="rounded-full px-3.5 min-h-[38px] text-[13px] font-bold transition-colors duration-150"
-                                  style={{
-                                    background: on ? 'rgba(201,162,74,0.20)' : 'rgba(255,244,222,0.04)',
-                                    border: `1px solid ${on ? 'rgba(201,162,74,0.55)' : 'var(--line)'}`,
-                                    color: on ? '#e2c98a' : 'rgba(247,242,232,0.70)',
-                                  }}>
-                            {d.dia}
-                          </button>
-                        )
-                      })}
-                      <button onClick={() => setCopiando(new Set(diasVista.filter(d => d.id !== dia.id).map(d => d.id)))}
-                              className="rounded-full px-3.5 min-h-[38px] text-[13px] font-bold text-amber-300 underline underline-offset-4">
-                        Todos
-                      </button>
+                {/* ── Agregar cupo a mano ── */}
+                {nuevo ? (
+                  <div className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid var(--line)' }}>
+                    <p className="text-white text-sm font-bold">Nuevo cupo</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="glass-label" htmlFor="n-inicio">Empieza</label>
+                        <input id="n-inicio" type="time" className={`glass-input${nuevo.error ? ' error' : ''}`} value={nuevo.inicio}
+                               onChange={e => setNuevo(n => ({ ...n, inicio: e.target.value, error: '' }))} />
+                      </div>
+                      <div>
+                        <label className="glass-label" htmlFor="n-fin">Termina</label>
+                        <input id="n-fin" type="time" className={`glass-input${nuevo.error ? ' error' : ''}`} value={nuevo.fin}
+                               onChange={e => setNuevo(n => ({ ...n, fin: e.target.value, error: '' }))} />
+                      </div>
                     </div>
+                    {nuevo.error && (
+                      <p className="text-red-300 text-[13px] flex items-center gap-1.5" role="alert">
+                        <AlertCircle size={14} /> {nuevo.error}
+                      </p>
+                    )}
                     <div className="flex gap-2">
-                      <button onClick={() => setCopiando(null)}
+                      <button onClick={() => setNuevo(null)}
                               className="flex-1 rounded-[14px] min-h-[50px] text-sm font-bold text-white/75"
                               style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line-strong)' }}>
-                        Cancelar
+                        Listo
                       </button>
-                      <button onClick={copiar} disabled={!copiando.size} className="glass-btn-primary flex-[2]"
-                              style={!copiando.size ? { opacity: 0.5 } : undefined}>
-                        {copiando.size ? `Copiar a ${copiando.size} ${copiando.size === 1 ? 'día' : 'días'}` : 'Elige los días'}
+                      <button onClick={agregarSlot} className="glass-btn-primary flex-[2]">
+                        <Plus size={17} strokeWidth={2.5} /> Agregar cupo
                       </button>
                     </div>
                   </div>
+                ) : (
+                  <button onClick={abrirNuevo}
+                          className="mt-4 w-full flex items-center justify-center gap-2 rounded-[14px] min-h-[50px] text-sm font-bold text-white/85 active:scale-[0.99] transition-transform"
+                          style={{ background: 'rgba(255,244,222,0.04)', border: '1px dashed rgba(201,162,74,0.45)' }}>
+                    <Plus size={17} className="text-amber-300" /> Agregar cupo
+                  </button>
                 )}
               </>
             )}

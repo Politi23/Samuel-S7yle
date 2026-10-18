@@ -55,20 +55,6 @@ export function fmtHora(hhmm) {
   return m === 0 ? `${h12}${periodo}` : `${h12}:${String(m).padStart(2, '0')}${periodo}`
 }
 
-export function nuevoSlot(inicio, duracion, diaFecha) {
-  return { id: crypto.randomUUID(), dia_fecha: diaFecha, inicio, fin: deMinutos(aMinutos(inicio) + duracion), ocupado: false }
-}
-
-/* Cupos seguidos de `duracion` minutos entre `desde` y `hasta`, para la fecha `diaFecha` */
-export function generarSlots(desde, hasta, duracion, diaFecha) {
-  const slots = []
-  const fin = aMinutos(hasta)
-  for (let t = aMinutos(desde); t + duracion <= fin; t += duracion) {
-    slots.push(nuevoSlot(deMinutos(t), duracion, diaFecha))
-  }
-  return slots
-}
-
 export const ordenarSlots = (slots) => [...slots].sort((a, b) => a.inicio.localeCompare(b.inicio))
 
 /* Devuelve un mensaje si la lista de cupos tiene algo inválido, o null */
