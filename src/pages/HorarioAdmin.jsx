@@ -20,7 +20,7 @@ const DIAS_DEFAULT = [
 
 function diaActualVE() {
   return new Date()
-    .toLocaleDateString('es-VE', { weekday: 'long' })
+    .toLocaleDateString('es-VE', { weekday: 'long', timeZone: 'America/Caracas' })
     .replace(/^\w/, c => c.toUpperCase())
 }
 
@@ -38,6 +38,9 @@ function haysolapamiento(slots) {
   }
   return false
 }
+
+const libresDe = (dia) => dia.abierto ? (dia.slots || []).filter(s => !s.ocupado).length : 0
+const firmaSlots = (slots) => JSON.stringify(slots || [])
 
 const T = {
   input: {
@@ -141,6 +144,20 @@ function SlotsList({ dia, idx, addSlot, updateSlot, deleteSlot }) {
   )
 }
 
+/* ── Aviso de cambios sin guardar ───────────────────────── */
+function PendienteBadge() {
+  return (
+    <span style={{
+      color: '#fbbf24', fontSize: 10, fontWeight: 700, lineHeight: 1,
+      padding: '3px 6px', borderRadius: 6,
+      background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)',
+      whiteSpace: 'nowrap',
+    }}>
+      Sin guardar
+    </span>
+  )
+}
+
 /* ── Página ──────────────────────────────────────────────── */
 export default function HorarioAdmin() {
   const toast = useToast()
@@ -151,6 +168,8 @@ export default function HorarioAdmin() {
   const [expandido, setExpandido] = useState({})
   const [modalReset, setModalReset] = useState(false)
   const [reiniciando, setReiniciando] = useState(false)
+  // Última versión guardada de los cupos de cada día (id → JSON) para detectar cambios sin guardar
+  const [guardados, setGuardados] = useState({})
 
   const urlPublica = `${window.location.origin}/horario`
   const hoy = diaActualVE()
@@ -172,16 +191,18 @@ export default function HorarioAdmin() {
 
         const normalizar = d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })
 
-        if (!data || data.length === 0) {
+        let filas = data
+        if (!filas || filas.length === 0) {
           const { data: ins, error: insErr } = await supabase
             .from('disponibilidad')
             .insert(DIAS_DEFAULT.map(d => ({ ...d, user_id: session.user.id })))
             .select()
           if (insErr) throw insErr
-          setDias((ins || []).map(normalizar))
-        } else {
-          setDias(data.map(normalizar))
+          filas = ins || []
         }
+        const normalizadas = filas.map(normalizar)
+        setDias(normalizadas)
+        setGuardados(Object.fromEntries(normalizadas.map(d => [d.id, firmaSlots(d.slots)])))
       } catch {
         toast('Error al cargar el horario', 'error')
       } finally {
@@ -195,6 +216,31 @@ export default function HorarioAdmin() {
   const set = useCallback((idx, campo, valor) => {
     setDias(prev => prev.map((d, i) => i === idx ? { ...d, [campo]: valor } : d))
   }, [])
+
+  /* abrir/cerrar se guarda al instante para que el horario público se actualice */
+  const toggleAbierto = useCallback(async (idx) => {
+    const dia = dias[idx]
+    if (!dia) return
+    const abierto = !dia.abierto
+    set(idx, 'abierto', abierto)
+
+    const { data: updated, error } = await supabase
+      .from('disponibilidad')
+      .update({
+        abierto,
+        cupos:      libresDe({ ...dia, abierto, slots: JSON.parse(guardados[dia.id] || '[]') }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', dia.id)
+      .select('id')
+
+    if (error || !updated || updated.length === 0) {
+      set(idx, 'abierto', dia.abierto)
+      toast(`No se pudo ${abierto ? 'abrir' : 'cerrar'} ${dia.dia}`, 'error')
+    } else {
+      toast(`${dia.dia} ${abierto ? 'abierto' : 'cerrado'} ✓`, 'success')
+    }
+  }, [dias, guardados, set, toast])
 
   const addSlot = useCallback((idx) => {
     setDias(prev => prev.map((d, i) => {
@@ -236,12 +282,11 @@ export default function HorarioAdmin() {
     }
 
     setGuardando(idx)
-    const libres = slots.filter(s => !s.ocupado).length
     const { data: updated, error } = await supabase
       .from('disponibilidad')
       .update({
         abierto:     dia.abierto,
-        cupos:       libres,
+        cupos:       libresDe(dia),
         slots,
         hora_inicio: null,
         updated_at:  new Date().toISOString(),
@@ -255,10 +300,12 @@ export default function HorarioAdmin() {
       toast('No se guardó — sin filas actualizadas', 'error')
     } else {
       toast(`${dia.dia} guardado ✓`, 'success')
+      const slotsGuardados = Array.isArray(updated[0].slots) ? updated[0].slots : []
       setDias(prev => prev.map((d, i) => i === idx
-        ? { ...d, ...updated[0], slots: Array.isArray(updated[0].slots) ? updated[0].slots : [] }
+        ? { ...d, ...updated[0], slots: slotsGuardados }
         : d
       ))
+      setGuardados(prev => ({ ...prev, [dia.id]: firmaSlots(slotsGuardados) }))
     }
     setGuardando(null)
   }, [dias, toast])
@@ -267,7 +314,7 @@ export default function HorarioAdmin() {
   const reiniciarSemana = useCallback(async () => {
     setReiniciando(true)
     try {
-      await Promise.all(
+      const resultados = await Promise.all(
         dias.map(dia =>
           supabase
             .from('disponibilidad')
@@ -275,7 +322,9 @@ export default function HorarioAdmin() {
             .eq('id', dia.id)
         )
       )
+      if (resultados.some(r => r.error)) throw new Error('reset')
       setDias(prev => prev.map(d => ({ ...d, slots: [], cupos: 0 })))
+      setGuardados(Object.fromEntries(dias.map(d => [d.id, firmaSlots([])])))
       toast('Semana reiniciada ✓', 'success')
     } catch {
       toast('Error al reiniciar la semana', 'error')
@@ -291,6 +340,17 @@ export default function HorarioAdmin() {
     setCopiado(true)
     setTimeout(() => setCopiado(false), 2200)
   }
+
+  const sinGuardar = (dia) => guardados[dia.id] !== undefined && guardados[dia.id] !== firmaSlots(dia.slots)
+  const haySinGuardar = dias.some(sinGuardar)
+
+  /* avisar antes de salir si quedaron cupos sin guardar */
+  useEffect(() => {
+    if (!haySinGuardar) return
+    const avisar = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', avisar)
+    return () => window.removeEventListener('beforeunload', avisar)
+  }, [haySinGuardar])
 
   const idxHoy    = dias.findIndex(d => d.dia.toLowerCase() === hoy.toLowerCase())
   const diaHoy    = idxHoy >= 0 ? dias[idxHoy] : null
@@ -339,13 +399,14 @@ export default function HorarioAdmin() {
                 <span style={{ color: 'rgba(251,191,36,0.50)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   hoy
                 </span>
+                {sinGuardar(diaHoy) && <PendienteBadge />}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{ fontSize: 12, color: diaHoy.abierto ? '#fbbf24' : 'rgba(255,255,255,0.30)', fontWeight: 600 }}>
                   {diaHoy.abierto ? 'Abierto' : 'Cerrado'}
                 </span>
                 <button
-                  onClick={() => set(idxHoy, 'abierto', !diaHoy.abierto)}
+                  onClick={() => toggleAbierto(idxHoy)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
                   aria-label={diaHoy.abierto ? 'Marcar como cerrado' : 'Marcar como abierto'}>
                   {diaHoy.abierto
@@ -366,13 +427,15 @@ export default function HorarioAdmin() {
               </div>
             )}
 
-            <button
-              className="glass-btn-primary"
-              onClick={() => guardar(idxHoy)}
-              disabled={guardando === idxHoy}
-              style={{ opacity: guardando === idxHoy ? 0.55 : 1, fontSize: 15 }}>
-              {guardando === idxHoy ? 'Guardando…' : 'Guardar'}
-            </button>
+            {diaHoy.abierto && (
+              <button
+                className="glass-btn-primary"
+                onClick={() => guardar(idxHoy)}
+                disabled={guardando === idxHoy}
+                style={{ opacity: guardando === idxHoy ? 0.55 : 1, fontSize: 15 }}>
+                {guardando === idxHoy ? 'Guardando…' : 'Guardar'}
+              </button>
+            )}
           </div>
         ) : null}
 
@@ -407,7 +470,7 @@ export default function HorarioAdmin() {
                     </span>
 
                     <button
-                      onClick={() => set(idx, 'abierto', !dia.abierto)}
+                      onClick={() => toggleAbierto(idx)}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0 }}
                       aria-label={dia.abierto ? 'Cerrar' : 'Abrir'}>
                       {dia.abierto
@@ -415,7 +478,8 @@ export default function HorarioAdmin() {
                         : <ToggleLeft  size={24} color="rgba(255,255,255,0.22)" />}
                     </button>
 
-                    <span style={{ flex: 1, color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>
+                    <span style={{ flex: 1, color: 'rgba(255,255,255,0.35)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      {sinGuardar(dia) && <PendienteBadge />}
                       {!dia.abierto
                         ? 'Cerrado'
                         : slots.length === 0
@@ -442,13 +506,15 @@ export default function HorarioAdmin() {
                           Activa el día primero con el interruptor
                         </div>
                       )}
-                      <button
-                        className="glass-btn-primary"
-                        onClick={() => guardar(idx)}
-                        disabled={guardando === idx}
-                        style={{ opacity: guardando === idx ? 0.55 : 1, fontSize: 14 }}>
-                        {guardando === idx ? 'Guardando…' : 'Guardar'}
-                      </button>
+                      {dia.abierto && (
+                        <button
+                          className="glass-btn-primary"
+                          onClick={() => guardar(idx)}
+                          disabled={guardando === idx}
+                          style={{ opacity: guardando === idx ? 0.55 : 1, fontSize: 14 }}>
+                          {guardando === idx ? 'Guardando…' : 'Guardar'}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

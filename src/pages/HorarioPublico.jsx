@@ -12,7 +12,7 @@ function tiempoDesde(ts) {
 
 function diaActualVE() {
   return new Date()
-    .toLocaleDateString('es-VE', { weekday: 'long' })
+    .toLocaleDateString('es-VE', { weekday: 'long', timeZone: 'America/Caracas' })
     .replace(/^\w/, c => c.toUpperCase())
 }
 
@@ -72,7 +72,7 @@ export default function HorarioPublico() {
 
     const channel = supabase
       .channel('horario_publico')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'disponibilidad' }, cargar)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'disponibilidad' }, cargar)
       .subscribe()
 
     const intervalo = setInterval(cargar, 20000)
@@ -170,18 +170,16 @@ export default function HorarioPublico() {
                   const slots  = dia.slots || []
                   const libres = slots.filter(s => !s.ocupado)
 
-                  /* badge */
+                  /* badge — solo cuenta los cupos reales (slots); el día cerrado manda */
                   let badge
                   if (!dia.abierto) {
                     badge = { color: 'rgba(255,255,255,0.25)', bg: 'transparent', border: 'rgba(255,255,255,0.10)', Icon: XCircle, label: 'Cerrado' }
-                  } else if (slots.length > 0) {
-                    if (libres.length === 0)     badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: 'Sin cupos' }
-                    else if (libres.length <= 2) badge = { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.20)',  Icon: AlertCircle,  label: `${libres.length} libre${libres.length !== 1 ? 's' : ''}` }
-                    else                         badge = { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.20)',  Icon: CheckCircle2, label: `${libres.length} libres` }
+                  } else if (libres.length === 0) {
+                    badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: 'Sin cupos' }
+                  } else if (libres.length <= 2) {
+                    badge = { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.20)',  Icon: AlertCircle,  label: `${libres.length} libre${libres.length !== 1 ? 's' : ''}` }
                   } else {
-                    if (dia.cupos === 0)          badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: 'Sin cupos' }
-                    else if (dia.cupos <= 2)      badge = { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.20)',  Icon: AlertCircle,  label: `${dia.cupos} cupo${dia.cupos !== 1 ? 's' : ''}` }
-                    else                          badge = { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.20)',  Icon: CheckCircle2, label: `${dia.cupos} cupos` }
+                    badge = { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.20)',  Icon: CheckCircle2, label: `${libres.length} libres` }
                   }
 
                   return (
