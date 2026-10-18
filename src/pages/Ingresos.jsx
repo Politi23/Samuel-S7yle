@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useBcv } from '../hooks/useBcv'
-import { Plus, DollarSign, ChevronLeft, ChevronRight, Edit2, FileText, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, DollarSign, ChevronLeft, ChevronRight, Edit2, Trash2, FileText, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
-function exportarPDF(filtrados, mes, anio, totalUSD, totalBs, totalEnUsd, tasaHoy) {
+function exportarPDF(filtrados, mes, anio, totalUSD, totalBs, totalEnUsd) {
   const filas = filtrados.map(i => {
     const t = Number(i.tasa_bcv)
     const usdEq = i.moneda === 'Bs' && t ? `≈€${(Number(i.monto)/t).toFixed(2)}` : ''
@@ -117,6 +118,7 @@ export default function Ingresos() {
   const { data: bcv } = useBcv()
   const tasaHoy = bcv?.eur ?? null
   const navigate = useNavigate()
+  const toast = useToast()
   const hoyStr = hoyVE()
   const [mes, setMes] = useState(() => parseInt(hoyStr.split('-')[1]) - 1)
   const [anio, setAnio] = useState(() => parseInt(hoyStr.split('-')[0]))
@@ -202,7 +204,7 @@ export default function Ingresos() {
         title="Ingresos"
         action={
           <div className="flex gap-2">
-            <button onClick={() => exportarPDF(filtrados, mes, anio, totalUSD, totalBs, totalEnUsd, tasaHoy)}
+            <button onClick={() => exportarPDF(filtrados, mes, anio, totalUSD, totalBs, totalEnUsd)}
                     className="glass-btn-icon w-10 h-10 flex items-center justify-center" title="PDF mensual">
               <FileText size={17} className="text-white/70" />
             </button>
@@ -230,40 +232,41 @@ export default function Ingresos() {
           </button>
         </div>
 
-        {/* Totales con toggle mes/año */}
-        <div className="space-y-2">
-          <div className="glass-card text-center py-4 space-y-3" style={{background:'rgba(201,162,74,0.15)', border:'1px solid rgba(201,162,74,0.30)'}}>
-            <div className="flex justify-center">
-              <div className="flex rounded-xl overflow-hidden" style={{border:'1px solid rgba(255,255,255,0.18)'}}>
-                {[['mes', MESES[mes].slice(0,3)], ['anio', String(anio)]].map(([v, l]) => (
-                  <button key={v} onClick={() => setVistaTotal(v)}
-                          className="px-4 py-1.5 text-xs font-semibold transition-all"
-                          style={{
-                            background: vistaTotal === v ? 'rgba(201,162,74,0.20)' : 'transparent',
-                            color: vistaTotal === v ? 'white' : 'rgba(255,255,255,0.40)',
-                          }}>
-                    {l}
-                  </button>
-                ))}
+        {/* Totales: mismo estado de cuenta que en Inicio */}
+        <section className="glass-card" style={{ padding: 18 }}>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-white text-[15px] font-bold">{vistaTotal === 'mes' ? `${MESES[mes]} ${anio}` : `Año ${anio}`}</h2>
+            <div className="flex rounded-[10px] p-0.5" role="tablist"
+                 style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line)' }}>
+              {[['mes', MESES[mes].slice(0,3)], ['anio', String(anio)]].map(([v, l]) => (
+                <button key={v} role="tab" aria-selected={vistaTotal === v} onClick={() => setVistaTotal(v)}
+                        className="px-3 py-1 rounded-[8px] text-xs font-bold transition-colors duration-150"
+                        style={{
+                          background: vistaTotal === v ? 'rgba(201,162,74,0.20)' : 'transparent',
+                          color: vistaTotal === v ? '#e2c98a' : 'rgba(247,242,232,0.55)',
+                        }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-white/55 text-[12px] font-semibold mt-4">Total combinado</p>
+          <p className="text-amber-200 text-[32px] font-extrabold leading-none mt-1" style={{ letterSpacing: '-0.03em' }}>
+            ${combinado.toFixed(2)}
+          </p>
+          <p className="text-white/45 text-[11px] mt-1.5">USD + Bs a la tasa EUR del día de cada cobro</p>
+          <dl className="mt-4 text-sm">
+            {[
+              ['Cobrado en USD', `$${usdDirecto.toFixed(2)}`, 'text-emerald-300'],
+              ['Cobrado en Bs.', `Bs. ${bsTotal.toFixed(2)}`, 'text-sky-300'],
+            ].map(([label, valor, color]) => (
+              <div key={label} className="flex items-center justify-between py-2.5" style={{ borderTop: '1px solid var(--line)' }}>
+                <dt className="text-white/65">{label}</dt>
+                <dd className={`${color} font-bold`}>{valor}</dd>
               </div>
-            </div>
-            <div>
-              <p className="text-xs text-amber-300/70 font-semibold mb-1">Total combinado</p>
-              <p className="text-3xl font-bold text-amber-200">${combinado.toFixed(2)}</p>
-              <p className="text-white/30 text-xs mt-1">USD directo + Bs a tasa EUR del día de cada cobro</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="glass-card text-center py-3" style={{background:'rgba(124,192,147,0.10)', border:'1px solid rgba(124,192,147,0.20)'}}>
-              <p className="text-xs text-emerald-300/70 font-semibold mb-1">USD directo</p>
-              <p className="text-xl font-bold text-emerald-300">${usdDirecto.toFixed(2)}</p>
-            </div>
-            <div className="glass-card text-center py-3" style={{background:'rgba(134,174,198,0.10)', border:'1px solid rgba(134,174,198,0.20)'}}>
-              <p className="text-xs text-sky-300/70 font-semibold mb-1">Total Bs.</p>
-              <p className="text-xl font-bold text-sky-300">{bsTotal.toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
+            ))}
+          </dl>
+        </section>
 
         {/* Ingresos por día */}
         {ingresosMes.length > 0 && (
@@ -371,14 +374,14 @@ export default function Ingresos() {
         )}
 
         {/* Filtro moneda */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex rounded-[12px] p-1" role="tablist" aria-label="Filtrar por moneda"
+             style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line)' }}>
           {['todos', 'USD', 'Bs'].map(m => (
-            <button key={m} onClick={() => setFiltroMoneda(m)}
-                    className="py-2.5 rounded-2xl text-sm font-semibold transition-all"
+            <button key={m} role="tab" aria-selected={filtroMoneda === m} onClick={() => setFiltroMoneda(m)}
+                    className="flex-1 py-2 rounded-[9px] text-sm font-bold transition-colors duration-150"
                     style={{
-                      background: filtroMoneda === m ? 'rgba(201,162,74,0.20)' : 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      color: filtroMoneda === m ? 'white' : 'rgba(255,255,255,0.40)'
+                      background: filtroMoneda === m ? 'rgba(201,162,74,0.20)' : 'transparent',
+                      color: filtroMoneda === m ? '#e2c98a' : 'rgba(247,242,232,0.55)',
                     }}>
               {m === 'todos' ? 'Todos' : m}
             </button>
@@ -397,60 +400,60 @@ export default function Ingresos() {
             </div>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtrados.map(i => (
-              <div key={i.id} className="glass-card flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                     style={{background:'rgba(124,192,147,0.15)', border:'1px solid rgba(124,192,147,0.25)'}}>
-                  <DollarSign size={19} className="text-emerald-300" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold truncate">{i.cliente_nombre}</p>
-                  <p className="text-white/55 text-sm truncate">{i.concepto}</p>
-                  <p className="text-white/30 text-xs">{formatFecha(i.fecha)} · {i.metodo_pago}</p>
-                  {i.moneda === 'Bs' && (() => { const t = Number(i.tasa_bcv) || tasaHoy; return t ? <p className="text-amber-300/50 text-xs">Tasa EUR: {parseFloat(t.toFixed(4))} · ≈€{(Number(i.monto)/t).toFixed(2)}</p> : null })()}
-                  {i.notas ? <p className="text-white/40 text-xs truncate">{i.notas}</p> : null}
-                </div>
-                <div className="text-right flex-shrink-0 space-y-1">
-                  <p className={`text-base font-bold ${i.moneda === 'USD' ? 'text-emerald-300' : 'text-sky-300'}`}>
-                    {i.moneda === 'USD' ? '$' : 'Bs.'}{Number(i.monto).toFixed(2)}
-                  </p>
-                  {confirmar?.id === i.id ? (
-                    <div className="flex gap-1 justify-end items-center">
-                      <span className="text-white/40 text-xs mr-1">¿Seguro?</span>
-                      <button onClick={() => setConfirmar(null)} className="px-2 py-1 rounded-lg text-xs text-white/60 active:text-white" style={{background:'rgba(255,255,255,0.10)'}}>
-                        No
-                      </button>
-                      <button
-                        disabled={eliminando}
-                        onClick={async () => {
-                          setEliminando(true)
-                          try { await eliminarIngreso(i.id) } catch {}
-                          setEliminando(false)
-                          setConfirmar(null)
-                        }}
-                        className="px-2 py-1 rounded-lg text-xs text-white font-semibold active:opacity-70"
-                        style={{background:'rgba(239,68,68,0.55)'}}>
-                        {eliminando ? '…' : 'Sí'}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2 justify-end">
-                      <button onClick={() => navigate(`/ingresos/${i.id}/editar`)} className="text-white/35 active:text-white/70">
-                        <Edit2 size={13} />
-                      </button>
-                      <button onClick={() => setConfirmar(i)} className="text-red-400/55 text-xs active:text-red-400 px-2 py-1">
-                        Eliminar
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-            <p className="text-center text-white/25 text-xs py-1">
+          <section className="glass-card" style={{ paddingTop: 6, paddingBottom: 6 }}>
+            <ul>
+              {filtrados.map((i, idx) => (
+                <li key={i.id} className="flex items-start gap-3 py-3" style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold truncate">{i.cliente_nombre}</p>
+                    <p className="text-white/60 text-sm truncate">{i.concepto}</p>
+                    <p className="text-white/45 text-xs mt-0.5">{formatFecha(i.fecha)}{i.metodo_pago ? ` · ${i.metodo_pago}` : ''}</p>
+                    {i.moneda === 'Bs' && (() => { const t = Number(i.tasa_bcv) || tasaHoy; return t ? <p className="text-amber-300/70 text-xs">Tasa EUR {parseFloat(t.toFixed(4))} · ≈€{(Number(i.monto)/t).toFixed(2)}</p> : null })()}
+                    {i.notas ? <p className="text-white/45 text-xs truncate">{i.notas}</p> : null}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className={`text-base font-bold ${i.moneda === 'USD' ? 'text-emerald-300' : 'text-sky-300'}`}>
+                      {i.moneda === 'USD' ? '$' : 'Bs. '}{Number(i.monto).toFixed(2)}
+                    </p>
+                    {confirmar?.id === i.id ? (
+                      <div className="flex gap-1 justify-end items-center mt-1">
+                        <span className="text-white/60 text-xs mr-1">¿Eliminar?</span>
+                        <button onClick={() => setConfirmar(null)} className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/75" style={{background:'rgba(255,244,222,0.08)'}}>
+                          No
+                        </button>
+                        <button
+                          disabled={eliminando}
+                          onClick={async () => {
+                            setEliminando(true)
+                            try { await eliminarIngreso(i.id) } catch { toast('No se pudo eliminar el ingreso', 'error') }
+                            setEliminando(false)
+                            setConfirmar(null)
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg text-xs text-white font-bold"
+                          style={{background:'rgba(239,68,68,0.55)'}}>
+                          {eliminando ? '…' : 'Sí'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end -mr-1.5">
+                        <button onClick={() => navigate(`/ingresos/${i.id}/editar`)} aria-label="Editar ingreso"
+                                className="w-9 h-9 flex items-center justify-center text-white/50 active:text-white/80">
+                          <Edit2 size={15} />
+                        </button>
+                        <button onClick={() => setConfirmar(i)} aria-label="Eliminar ingreso"
+                                className="w-9 h-9 flex items-center justify-center text-red-400/65 active:text-red-400">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="text-center text-white/45 text-xs pt-2 pb-1" style={{ borderTop: '1px solid var(--line)' }}>
               {filtrados.length} {filtrados.length === 1 ? 'registro' : 'registros'}
             </p>
-          </div>
+          </section>
         )}
       </div>
 

@@ -102,22 +102,27 @@ export default function Estadisticas() {
 
       <div className="px-4 pt-4 pb-6 space-y-4">
 
-        {/* KPIs del mes */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* KPIs del mes: un solo panel, como en Inicio */}
+        <section className="glass-card grid grid-cols-2" style={{ padding: 0 }} aria-label="Indicadores del mes">
           {[
-            { icon: Users,        val: clientes.length,              label: 'Total clientes',    color: 'rgba(201,162,74,0.20)',   border: 'rgba(201,162,74,0.35)',  textColor: '#e2c98a' },
-            { icon: CalendarDays, val: citasFuturas,                  label: 'Citas futuras',     color: 'rgba(134,174,198,0.15)', border: 'rgba(134,174,198,0.30)', textColor: '#a9c7da' },
-            { icon: DollarSign,   val: `$${totalMesUsd.toFixed(0)}`,  label: 'Ingresos este mes', color: 'rgba(124,192,147,0.15)',  border: 'rgba(124,192,147,0.30)', textColor: '#9fd3ae' },
-            { icon: Award,        val: `$${promPorCita.toFixed(0)}`,  label: 'Promedio por cita', color: 'rgba(226,201,138,0.15)',  border: 'rgba(226,201,138,0.30)', textColor: '#ecdcae' },
-          ].map(({ icon: Icon, val, label, color, border, textColor }) => (
-            <div key={label} className="glass-card flex flex-col items-center gap-1 py-4 text-center"
-                 style={{background: color, border: `1px solid ${border}`}}>
-              <Icon size={17} style={{color: textColor, opacity: 0.7}} />
-              <p className="text-xl font-bold" style={{color: textColor}}>{val}</p>
-              <p className="text-xs font-semibold" style={{color: textColor, opacity: 0.6}}>{label}</p>
+            { Icon: Users,        val: clientes.length,              label: 'Clientes' },
+            { Icon: CalendarDays, val: citasFuturas,                  label: 'Citas futuras' },
+            { Icon: DollarSign,   val: `$${totalMesUsd.toFixed(0)}`,  label: 'Ingresos del mes', oro: true },
+            { Icon: Award,        val: `$${promPorCita.toFixed(0)}`,  label: 'Promedio por cita' },
+          ].map(({ Icon, val, label, oro }, idx) => (
+            <div key={label} className="px-4 py-4"
+                 style={{
+                   borderLeft: idx % 2 ? '1px solid var(--line)' : undefined,
+                   borderTop:  idx > 1 ? '1px solid var(--line)' : undefined,
+                 }}>
+              <div className="flex items-center gap-1.5 text-white/55">
+                <Icon size={13} />
+                <span className="text-[12px] font-semibold">{label}</span>
+              </div>
+              <p className={`${oro ? 'text-amber-200' : 'text-white'} text-[26px] font-extrabold leading-none mt-1.5`}>{val}</p>
             </div>
           ))}
-        </div>
+        </section>
 
         {/* Clientes más frecuentes */}
         {topClientes.length > 0 && (
@@ -142,7 +147,7 @@ export default function Estadisticas() {
                       <span className="text-white/85 text-sm truncate">{nombre}</span>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-white/40 text-xs">{visitas} visitas</span>
+                      <span className="text-white/40 text-xs">{visitas} {visitas === 1 ? 'visita' : 'visitas'}</span>
                       <span className="text-emerald-300 text-xs font-semibold">${total.toFixed(0)}</span>
                     </div>
                   </div>
@@ -194,7 +199,7 @@ export default function Estadisticas() {
         {/* Citas por mes */}
         <div className="glass-card space-y-3">
           <div className="flex items-center gap-2">
-            <CalendarDays size={14} className="text-sky-300" />
+            <CalendarDays size={14} className="text-amber-300" />
             <span className="text-white font-semibold text-sm">Citas · últimos 6 meses</span>
           </div>
           <div className="flex items-end justify-between gap-1.5" style={{height:'80px'}}>
@@ -209,10 +214,10 @@ export default function Estadisticas() {
                          height: `${Math.max(pct, n > 0 ? 5 : 0)}%`,
                          minHeight: n > 0 ? '4px' : '0',
                          background: esMesActual
-                           ? 'linear-gradient(180deg, rgba(134,174,198,0.9), rgba(56,189,248,0.5))'
+                           ? 'linear-gradient(180deg, rgba(226,201,138,0.95), rgba(156,122,44,0.55))'
                            : 'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))',
                        }} />
-                  <span className="text-[9px] font-semibold" style={{color: esMesActual ? '#a9c7da' : 'rgba(255,255,255,0.35)'}}>{label}</span>
+                  <span className="text-[9px] font-semibold" style={{color: esMesActual ? '#e2c98a' : 'rgba(255,255,255,0.45)'}}>{label}</span>
                 </div>
               )
             })}
@@ -292,7 +297,7 @@ export default function Estadisticas() {
                     <div className="h-full rounded-full"
                          style={{
                            width:`${(n/maxHora)*100}%`,
-                           background:'linear-gradient(90deg, rgba(134,174,198,0.8), rgba(56,189,248,0.4))'
+                           background:'linear-gradient(90deg, rgba(201,162,74,0.85), rgba(156,122,44,0.45))'
                          }} />
                   </div>
                   <span className="text-white/35 text-xs w-5 text-right flex-shrink-0">{n}</span>

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../context/ToastContext'
-import { Edit2, Trash2, DollarSign, Plus, Phone, Calendar, Clock, Copy, Check, MessageCircle, CalendarPlus, Camera, X, Gift, Star } from 'lucide-react'
+import { Edit2, Trash2, Plus, Phone, Calendar, Clock, Copy, Check, MessageCircle, CalendarPlus, Camera, X, Gift, Star } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
@@ -137,8 +137,7 @@ export default function DetalleCliente() {
   })() : null
   const proximaCita = citas
     .filter(c => c.cliente_id === id && c.fecha >= hoyStr && (c.estado === 'pendiente' || !c.estado))
-    .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora||'').localeCompare(b.hora||''))
-    [0] || null
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora||'').localeCompare(b.hora||''))[0] || null
 
   const totalUSD = historial.filter(i => i.moneda === 'USD').reduce((a, i) => a + Number(i.monto), 0)
   const totalBs  = historial.filter(i => i.moneda === 'Bs').reduce((a, i) => a + Number(i.monto), 0)
@@ -253,30 +252,30 @@ export default function DetalleCliente() {
         )}
 
         {/* Totales */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="glass-card text-center py-4" style={{background:'rgba(124,192,147,0.10)', border:'1px solid rgba(124,192,147,0.20)'}}>
-            <p className="text-xs text-emerald-300/70 mb-1">Total USD</p>
-            <p className="text-xl font-bold text-emerald-300">${totalUSD.toFixed(2)}</p>
+        <section className="glass-card grid grid-cols-2" style={{ padding: 0 }} aria-label="Total pagado">
+          <div className="px-4 py-3.5">
+            <p className="text-white/55 text-[12px] font-semibold">Pagado en USD</p>
+            <p className="text-emerald-300 text-xl font-extrabold mt-0.5">${totalUSD.toFixed(2)}</p>
           </div>
-          <div className="glass-card text-center py-4" style={{background:'rgba(134,174,198,0.10)', border:'1px solid rgba(134,174,198,0.20)'}}>
-            <p className="text-xs text-sky-300/70 mb-1">Total Bs.</p>
-            <p className="text-xl font-bold text-sky-300">{totalBs.toFixed(2)}</p>
+          <div className="px-4 py-3.5" style={{ borderLeft: '1px solid var(--line)' }}>
+            <p className="text-white/55 text-[12px] font-semibold">Pagado en Bs.</p>
+            <p className="text-sky-300 text-xl font-extrabold mt-0.5">{totalBs.toFixed(2)}</p>
           </div>
-        </div>
+        </section>
 
         {/* Tabs */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex rounded-[12px] p-1" role="tablist" aria-label="Historial del cliente"
+             style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line)' }}>
           {[
             { key: 'pagos', label: `Pagos (${historial.length})` },
             { key: 'citas', label: `Citas (${citasCliente.length})` },
             { key: 'fotos', label: `Fotos (${fotos.length})` },
           ].map(t => (
-            <button key={t.key} onClick={() => setTabActivo(t.key)}
-                    className="py-2.5 rounded-2xl text-sm font-semibold transition-all"
+            <button key={t.key} role="tab" aria-selected={tabActivo === t.key} onClick={() => setTabActivo(t.key)}
+                    className="flex-1 py-2 rounded-[9px] text-sm font-bold transition-colors duration-150"
                     style={{
-                      background: tabActivo === t.key ? 'rgba(201,162,74,0.20)' : 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      color: tabActivo === t.key ? 'white' : 'rgba(255,255,255,0.40)'
+                      background: tabActivo === t.key ? 'rgba(201,162,74,0.20)' : 'transparent',
+                      color: tabActivo === t.key ? '#e2c98a' : 'rgba(247,242,232,0.55)',
                     }}>
               {t.label}
             </button>
@@ -292,50 +291,48 @@ export default function DetalleCliente() {
               </button>
             </div>
             {historial.length === 0 ? (
-              <p className="text-white/30 text-sm text-center py-4">Sin pagos registrados</p>
+              <p className="text-white/50 text-sm py-3">Todavía no tiene pagos. Toca + para registrar uno.</p>
             ) : (
-              <div className="space-y-2">
-                {historial.map(i => (
-                  <div key={i.id} className="flex items-center gap-3 rounded-2xl px-3 py-3"
-                       style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)'}}>
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                         style={{background:'rgba(124,192,147,0.15)'}}>
-                      <DollarSign size={15} className="text-emerald-300" />
-                    </div>
+              <ul>
+                {historial.map((i, idx) => (
+                  <li key={i.id} className="flex items-start gap-3 py-3" style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-semibold truncate">{i.concepto}</p>
-                      <p className="text-white/40 text-xs">{formatFecha(i.fecha)} · {i.metodo_pago}</p>
+                      <p className="text-white/50 text-xs mt-0.5">{formatFecha(i.fecha)}{i.metodo_pago ? ` · ${i.metodo_pago}` : ''}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className={`text-sm font-bold ${i.moneda === 'USD' ? 'text-emerald-300' : 'text-sky-300'}`}>
-                        {i.moneda === 'USD' ? '$' : 'Bs.'}{Number(i.monto).toFixed(2)}
+                        {i.moneda === 'USD' ? '$' : 'Bs. '}{Number(i.monto).toFixed(2)}
                       </p>
-                      <div className="flex items-center gap-3 justify-end mt-0.5">
-                        <button onClick={() => navigate(`/ingresos/${i.id}/editar`)} className="text-white/35 active:text-white/70">
-                          <Edit2 size={13} />
-                        </button>
-                        {confirmarIngreso?.id === i.id ? (
-                          <div className="flex gap-1 items-center">
-                            <button onClick={() => setConfirmarIngreso(null)} className="px-1.5 py-0.5 rounded text-xs text-white/60" style={{background:'rgba(255,255,255,0.10)'}}>No</button>
-                            <button onClick={async () => {
-                              setEliminando(true)
-                              try { await eliminarIngreso(i.id) } catch {}
-                              setEliminando(false)
-                              setConfirmarIngreso(null)
-                            }} className="px-1.5 py-0.5 rounded text-xs text-white font-semibold" style={{background:'rgba(239,68,68,0.55)'}}>
-                              {eliminando ? '…' : 'Sí'}
-                            </button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setConfirmarIngreso(i)} className="text-red-400/55 text-xs active:text-red-400">
-                            Eliminar
+                      {confirmarIngreso?.id === i.id ? (
+                        <div className="flex gap-1 items-center justify-end mt-1">
+                          <span className="text-white/60 text-xs mr-1">¿Eliminar?</span>
+                          <button onClick={() => setConfirmarIngreso(null)} className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/75" style={{background:'rgba(255,244,222,0.08)'}}>No</button>
+                          <button disabled={eliminando} onClick={async () => {
+                            setEliminando(true)
+                            try { await eliminarIngreso(i.id) } catch { toast('No se pudo eliminar el pago', 'error') }
+                            setEliminando(false)
+                            setConfirmarIngreso(null)
+                          }} className="px-2.5 py-1.5 rounded-lg text-xs text-white font-bold" style={{background:'rgba(239,68,68,0.55)'}}>
+                            {eliminando ? '…' : 'Sí'}
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end -mr-1.5">
+                          <button onClick={() => navigate(`/ingresos/${i.id}/editar`)} aria-label="Editar pago"
+                                  className="w-9 h-9 flex items-center justify-center text-white/50 active:text-white/80">
+                            <Edit2 size={15} />
+                          </button>
+                          <button onClick={() => setConfirmarIngreso(i)} aria-label="Eliminar pago"
+                                  className="w-9 h-9 flex items-center justify-center text-red-400/65 active:text-red-400">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         )}
@@ -349,18 +346,13 @@ export default function DetalleCliente() {
               </button>
             </div>
             {citasCliente.length === 0 ? (
-              <p className="text-white/30 text-sm text-center py-4">Sin citas registradas</p>
+              <p className="text-white/50 text-sm py-3">Todavía no tiene citas. Toca + para agendar una.</p>
             ) : (
-              <div className="space-y-2">
-                {citasCliente.map(c => {
+              <ul>
+                {citasCliente.map((c, idx) => {
                   const cfg = ESTADO_CFG[c.estado || 'pendiente'] || ESTADO_CFG.pendiente
                   return (
-                    <div key={c.id} className="flex items-center gap-3 rounded-2xl px-3 py-3"
-                         style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)'}}>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                           style={{background:'rgba(201,162,74,0.15)'}}>
-                        <Calendar size={15} className="text-amber-300" />
-                      </div>
+                    <li key={c.id} className="flex items-center gap-3 py-3" style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-semibold truncate">{c.motivo}</p>
                         <div className="flex items-center gap-2 mt-0.5">
@@ -372,14 +364,14 @@ export default function DetalleCliente() {
                           )}
                         </div>
                       </div>
-                      <span className="text-xs font-semibold px-2 py-1 rounded-xl flex-shrink-0"
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0"
                             style={{background: cfg.bg, color: cfg.color}}>
                         {cfg.label}
                       </span>
-                    </div>
+                    </li>
                   )
                 })}
-              </div>
+              </ul>
             )}
           </div>
         )}

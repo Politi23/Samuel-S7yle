@@ -45,6 +45,12 @@ input, select, textarea, button {
   font-family: inherit;
 }
 
+::selection { background: rgba(201, 162, 74, 0.38); color: var(--ink); }
+
+input, textarea { caret-color: var(--gold-hi); }
+
+input[type="checkbox"], input[type="radio"], progress { accent-color: var(--gold); }
+
 :focus-visible {
   outline: 2px solid rgba(226, 201, 138, 0.85);
   outline-offset: 2px;
@@ -134,7 +140,13 @@ input, select, textarea, button {
   box-shadow: 0 0 0 3px rgba(201, 162, 74, 0.16);
 }
 
-.glass-input:focus-visible { outline: none; }
+.glass-input::selection { background: rgba(201, 162, 74, 0.38); color: var(--ink); }
+
+input, textarea { caret-color: var(--gold-hi); }
+
+input[type="checkbox"], input[type="radio"], progress { accent-color: var(--gold); }
+
+:focus-visible { outline: none; }
 
 .glass-input.error {
   border-color: rgba(248, 113, 113, 0.70);

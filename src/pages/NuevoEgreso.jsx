@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { Save } from 'lucide-react'
+import { Save, Scissors, Home } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
@@ -99,19 +99,20 @@ export default function NuevoEgreso() {
 
   return (
     <div className="min-h-screen">
-      <PageHeader title={esEdicion ? 'Editar Egreso' : 'Nuevo Egreso'} back />
+      <PageHeader title={esEdicion ? 'Editar egreso' : 'Nuevo egreso'} back />
 
       <div className="px-4 pt-4 pb-6 space-y-4">
 
-        <div className="flex rounded-2xl overflow-hidden" style={{border:'1px solid rgba(255,255,255,0.15)'}}>
-          {[['barberia','✂️  Barbería (trabajo)'],['personal','🏠  Personal (vida)']].map(([v, l]) => (
-            <button key={v} onClick={() => cambiarTipo(v)}
-                    className="flex-1 py-3 text-sm font-semibold transition-all"
+        <div className="flex rounded-[14px] p-1" role="tablist" aria-label="Tipo de egreso"
+             style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line)' }}>
+          {[['barberia', 'Barbería', Scissors], ['personal', 'Personal', Home]].map(([v, l, Icon]) => (
+            <button key={v} role="tab" aria-selected={tipo === v} onClick={() => cambiarTipo(v)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] text-sm font-bold transition-colors duration-150"
                     style={{
-                      background: tipo === v ? 'rgba(239,68,68,0.30)' : 'rgba(255,255,255,0.05)',
-                      color: tipo === v ? 'white' : 'rgba(255,255,255,0.40)',
+                      background: tipo === v ? 'rgba(201,162,74,0.20)' : 'transparent',
+                      color: tipo === v ? '#e2c98a' : 'rgba(247,242,232,0.55)',
                     }}>
-              {l}
+              <Icon size={15} /> {l}
             </button>
           ))}
         </div>
@@ -149,13 +150,13 @@ export default function NuevoEgreso() {
           <div>
             <label className="glass-label">Monto *</label>
             <div className="flex gap-2">
-              <div className="flex rounded-2xl overflow-hidden flex-shrink-0" style={{border:'1px solid rgba(255,255,255,0.20)'}}>
+              <div className="flex rounded-[12px] overflow-hidden flex-shrink-0" style={{border:'1px solid var(--line-strong)'}}>
                 {['USD','Bs'].map(m => (
                   <button key={m} onClick={() => set('moneda', m)}
                           className="px-4 py-3 text-sm font-bold transition-colors"
                           style={{
-                            background: form.moneda === m ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)',
-                            color: 'white',
+                            background: form.moneda === m ? 'rgba(201,162,74,0.22)' : 'rgba(255,244,222,0.04)',
+                            color: form.moneda === m ? '#e2c98a' : 'rgba(247,242,232,0.60)',
                           }}>
                     {m}
                   </button>

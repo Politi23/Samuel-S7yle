@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useBcv } from '../hooks/useBcv'
-import { Plus, ArrowDownCircle, ChevronLeft, ChevronRight, Edit2, FileText, Home, User } from 'lucide-react'
+import { Plus, ArrowDownCircle, ChevronLeft, ChevronRight, Edit2, Trash2, FileText, Home, Scissors } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
 import PageHeader from '../components/PageHeader'
 import { esEgresoPersonal } from './NuevoEgreso'
 import { hoyVE } from '../lib/fecha'
@@ -59,6 +60,7 @@ export default function Egresos() {
   const { egresos, ingresos, eliminarEgreso } = useApp()
   const { data: bcv } = useBcv()
   const navigate = useNavigate()
+  const toast = useToast()
   const hoyStr = hoyVE()
   const [mes, setMes] = useState(() => parseInt(hoyStr.split('-')[1]) - 1)
   const [anio, setAnio] = useState(() => parseInt(hoyStr.split('-')[0]))
@@ -127,68 +129,54 @@ export default function Egresos() {
 
         {/* Balance del mes */}
         {ingresosMes.length > 0 || egresosMes.length > 0 ? (
-          <div className="glass-card space-y-3">
-            <p className="text-white/50 text-xs font-semibold uppercase tracking-wide">Balance {MESES[mes]}</p>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className="text-[10px] text-emerald-300/60 font-semibold mb-0.5">Ingresos</p>
-                <p className="text-sm font-bold text-emerald-300">${totalIngresosMesUsd.toFixed(0)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-red-300/60 font-semibold mb-0.5">Egresos</p>
-                <p className="text-sm font-bold text-red-300">${totalEgresosMesUsd.toFixed(0)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold mb-0.5" style={{color: balancePositivo ? 'rgba(159,211,174,0.60)' : 'rgba(252,165,165,0.60)'}}>Disponible</p>
-                <p className="text-sm font-bold" style={{color: balancePositivo ? '#9fd3ae' : '#fca5a5'}}>
-                  {balancePositivo ? '+' : ''}${balance.toFixed(0)}
-                </p>
-              </div>
+          <section className="glass-card space-y-3" style={{ padding: 18 }}>
+            <h2 className="text-white text-[15px] font-bold">Balance de {MESES[mes].toLowerCase()}</h2>
+            <div className="grid grid-cols-3 text-center">
+              {[
+                ['Ingresos', `$${totalIngresosMesUsd.toFixed(0)}`, 'text-emerald-300'],
+                ['Egresos', `$${totalEgresosMesUsd.toFixed(0)}`, 'text-red-300'],
+                ['Disponible', `${balancePositivo ? '+' : '−'}$${Math.abs(balance).toFixed(0)}`, balancePositivo ? 'text-emerald-300' : 'text-red-300'],
+              ].map(([label, valor, color], idx) => (
+                <div key={label} style={idx ? { borderLeft: '1px solid var(--line)' } : undefined}>
+                  <p className="text-white/55 text-[12px] font-semibold">{label}</p>
+                  <p className={`${color} text-lg font-extrabold mt-0.5`}>{valor}</p>
+                </div>
+              ))}
             </div>
-            <div className="w-full h-1.5 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,0.10)'}}>
-              <div className="h-full rounded-full transition-all"
+            <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,244,222,0.08)' }}
+                 role="img" aria-label="Porción de los ingresos gastada">
+              <div className="h-full rounded-full transition-all duration-300"
                    style={{
                      width: `${Math.min(100, totalIngresosMesUsd > 0 ? (totalEgresosMesUsd / totalIngresosMesUsd) * 100 : 100)}%`,
-                     background: balancePositivo ? 'rgba(239,68,68,0.70)' : '#ef4444'
+                     background: balancePositivo ? 'rgba(201,162,74,0.80)' : '#ef4444',
                    }} />
             </div>
-            <p className="text-white/25 text-xs text-center">
-              {totalIngresosMesUsd > 0 ? `${Math.round((totalEgresosMesUsd / totalIngresosMesUsd) * 100)}% de los ingresos gastado` : 'Sin ingresos este mes'}
+            <p className="text-white/50 text-xs text-center">
+              {totalIngresosMesUsd > 0 ? `Gastaste el ${Math.round((totalEgresosMesUsd / totalIngresosMesUsd) * 100)}% de lo que entró` : 'Sin ingresos este mes'}
             </p>
-          </div>
+          </section>
         ) : null}
 
         {/* Tabs */}
-        <div className="flex rounded-2xl overflow-hidden" style={{border:'1px solid rgba(255,255,255,0.15)'}}>
-          {[['todo','Todo'],['barberia','Barbería'],['personal','Personal']].map(([v, l]) => (
-            <button key={v} onClick={() => setTab(v)}
-                    className="flex-1 py-2.5 text-xs font-semibold transition-all"
+        <div className="flex rounded-[12px] p-1" role="tablist" aria-label="Tipo de egreso"
+             style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line)' }}>
+          {[['todo', 'Todo'], ['barberia', 'Barbería'], ['personal', 'Personal']].map(([v, l]) => (
+            <button key={v} role="tab" aria-selected={tab === v} onClick={() => setTab(v)}
+                    className="flex-1 py-2 rounded-[9px] text-sm font-bold transition-colors duration-150"
                     style={{
-                      background: tab === v ? 'rgba(239,68,68,0.28)' : 'rgba(255,255,255,0.05)',
-                      color: tab === v ? 'white' : 'rgba(255,255,255,0.40)',
+                      background: tab === v ? 'rgba(201,162,74,0.20)' : 'transparent',
+                      color: tab === v ? '#e2c98a' : 'rgba(247,242,232,0.55)',
                     }}>
               {l}
             </button>
           ))}
         </div>
 
-        {/* Totales del tab activo */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="glass-card text-center py-4" style={{background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.25)'}}>
-            <p className="text-xs text-red-300/70 font-semibold mb-1">USD</p>
-            <p className="text-2xl font-bold text-red-300">${totalUSD.toFixed(2)}</p>
-          </div>
-          <div className="glass-card text-center py-4" style={{background:'rgba(251,146,60,0.12)', border:'1px solid rgba(251,146,60,0.25)'}}>
-            <p className="text-xs text-orange-300/70 font-semibold mb-1">Bs.</p>
-            <p className="text-2xl font-bold text-orange-300">{totalBs.toFixed(2)}</p>
-          </div>
-        </div>
-
         {/* Lista */}
         {filtrados.length === 0 ? (
           <div className="glass-card text-center py-12">
-            <ArrowDownCircle size={32} className="text-white/20 mx-auto mb-3" />
-            <p className="text-white/35 text-sm mb-4">
+            <ArrowDownCircle size={32} className="text-white/25 mx-auto mb-3" />
+            <p className="text-white/55 text-sm mb-4">
               {tab === 'todo' ? `Sin egresos en ${MESES[mes]} ${anio}` : `Sin egresos ${tab === 'personal' ? 'personales' : 'de barbería'}`}
             </p>
             <div className="flex justify-center">
@@ -198,67 +186,79 @@ export default function Egresos() {
             </div>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtrados.map(e => {
-              const personal = esEgresoPersonal(e)
-              return (
-                <div key={e.id} className="glass-card flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                       style={{
-                         background: personal ? 'rgba(99,102,241,0.15)' : 'rgba(239,68,68,0.15)',
-                         border: `1px solid ${personal ? 'rgba(99,102,241,0.30)' : 'rgba(239,68,68,0.25)'}`,
-                       }}>
-                    {personal
-                      ? <User size={16} className="text-indigo-300" />
-                      : <Home size={16} className="text-red-300" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold truncate">{e.categoria}</p>
-                    {!personal && e.descripcion && <p className="text-white/55 text-sm truncate">{e.descripcion}</p>}
-                    <p className="text-white/30 text-xs">{formatFecha(e.fecha)}</p>
-                    {e.notas && <p className="text-white/40 text-xs truncate">{e.notas}</p>}
-                  </div>
-                  <div className="text-right flex-shrink-0 space-y-1">
-                    <p className="text-base font-bold" style={{color: personal ? '#a5b4fc' : '#fca5a5'}}>
-                      {e.moneda === 'USD' ? '$' : 'Bs.'}{Number(e.monto).toFixed(2)}
-                    </p>
-                    {confirmar?.id === e.id ? (
-                      <div className="flex gap-1 justify-end items-center">
-                        <span className="text-white/40 text-xs mr-1">¿Seguro?</span>
-                        <button onClick={() => setConfirmar(null)} className="px-2 py-1 rounded-lg text-xs text-white/60 active:text-white" style={{background:'rgba(255,255,255,0.10)'}}>
-                          No
-                        </button>
-                        <button
-                          disabled={eliminando}
-                          onClick={async () => {
-                            setEliminando(true)
-                            try { await eliminarEgreso(e.id) } catch {}
-                            setEliminando(false)
-                            setConfirmar(null)
-                          }}
-                          className="px-2 py-1 rounded-lg text-xs text-white font-semibold active:opacity-70"
-                          style={{background:'rgba(239,68,68,0.55)'}}>
-                          {eliminando ? '…' : 'Sí'}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2 justify-end">
-                        <button onClick={() => navigate(`/egresos/${e.id}/editar`)} className="text-white/35 active:text-white/70">
-                          <Edit2 size={13} />
-                        </button>
-                        <button onClick={() => setConfirmar(e)} className="text-red-400/55 text-xs active:text-red-400 px-2 py-1">
-                          Eliminar
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-            <p className="text-center text-white/25 text-xs py-1">
+          <section className="glass-card" style={{ paddingTop: 6, paddingBottom: 6 }}>
+            <div className="grid grid-cols-2 py-3" style={{ borderBottom: '1px solid var(--line)' }}>
+              <div>
+                <p className="text-white/55 text-[12px] font-semibold">Gastado en USD</p>
+                <p className="text-red-300 text-xl font-extrabold mt-0.5">${totalUSD.toFixed(2)}</p>
+              </div>
+              <div className="pl-4" style={{ borderLeft: '1px solid var(--line)' }}>
+                <p className="text-white/55 text-[12px] font-semibold">Gastado en Bs.</p>
+                <p className="text-red-300 text-xl font-extrabold mt-0.5">{totalBs.toFixed(2)}</p>
+              </div>
+            </div>
+            <ul>
+              {filtrados.map((e, idx) => {
+                const personal = esEgresoPersonal(e)
+                return (
+                  <li key={e.id} className="flex items-start gap-3 py-3" style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                         title={personal ? 'Personal' : 'Barbería'}
+                         style={{ background: 'rgba(201,162,74,0.10)', border: '1px solid rgba(201,162,74,0.24)' }}>
+                      {personal
+                        ? <Home size={15} className="text-amber-300" aria-label="Personal" />
+                        : <Scissors size={15} className="text-amber-300" aria-label="Barbería" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold truncate">{e.categoria}</p>
+                      {!personal && e.descripcion && <p className="text-white/60 text-sm truncate">{e.descripcion}</p>}
+                      <p className="text-white/45 text-xs mt-0.5">{formatFecha(e.fecha)}</p>
+                      {e.notas && <p className="text-white/45 text-xs truncate">{e.notas}</p>}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-base font-bold text-red-300">
+                        {e.moneda === 'USD' ? '$' : 'Bs. '}{Number(e.monto).toFixed(2)}
+                      </p>
+                      {confirmar?.id === e.id ? (
+                        <div className="flex gap-1 justify-end items-center mt-1">
+                          <span className="text-white/60 text-xs mr-1">¿Eliminar?</span>
+                          <button onClick={() => setConfirmar(null)} className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/75" style={{background:'rgba(255,244,222,0.08)'}}>
+                            No
+                          </button>
+                          <button
+                            disabled={eliminando}
+                            onClick={async () => {
+                              setEliminando(true)
+                              try { await eliminarEgreso(e.id) } catch { toast('No se pudo eliminar el egreso', 'error') }
+                              setEliminando(false)
+                              setConfirmar(null)
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg text-xs text-white font-bold"
+                            style={{background:'rgba(239,68,68,0.55)'}}>
+                            {eliminando ? '…' : 'Sí'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end -mr-1.5">
+                          <button onClick={() => navigate(`/egresos/${e.id}/editar`)} aria-label="Editar egreso"
+                                  className="w-9 h-9 flex items-center justify-center text-white/50 active:text-white/80">
+                            <Edit2 size={15} />
+                          </button>
+                          <button onClick={() => setConfirmar(e)} aria-label="Eliminar egreso"
+                                  className="w-9 h-9 flex items-center justify-center text-red-400/65 active:text-red-400">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+            <p className="text-center text-white/45 text-xs pt-2 pb-1" style={{ borderTop: '1px solid var(--line)' }}>
               {filtrados.length} {filtrados.length === 1 ? 'registro' : 'registros'}
             </p>
-          </div>
+          </section>
         )}
       </div>
     </div>

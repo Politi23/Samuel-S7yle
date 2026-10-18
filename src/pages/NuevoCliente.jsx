@@ -134,7 +134,7 @@ export default function NuevoCliente() {
 
   return (
     <div className="min-h-screen">
-      <PageHeader title={esEdicion ? 'Editar Cliente' : 'Nuevo Cliente'} back />
+      <PageHeader title={esEdicion ? 'Editar cliente' : 'Nuevo cliente'} back />
       <div className="px-4 pt-4 pb-6 space-y-4">
         <div className="glass-card space-y-4">
           <div className="grid grid-cols-2 gap-3">

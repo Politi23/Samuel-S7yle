@@ -1,7 +1,7 @@
 import QRCode from 'qrcode'
 
 const W = 1080, H = 1920
-const FUENTE = `-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif`
+const FUENTE = `Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
 
 // Escudo de la barbería; el PNG tiene margen transparente, este es el recorte útil
 const LOGO_SRC = '/android-chrome-512x512.png'
@@ -35,6 +35,8 @@ function roundRect(ctx, x, y, w, h, r) {
 /* Imagen vertical (tamaño de estado de WhatsApp / historia de Instagram) */
 export async function dibujarEstado(canvas, url) {
   const ctx = canvas.getContext('2d')
+  // El canvas solo usa la fuente si ya está cargada en esos pesos
+  await Promise.all(['500 40px Manrope', '700 70px Manrope'].map(f => document.fonts?.load(f).catch(() => null)))
   const logo = await cargarLogo()
   canvas.width = W
   canvas.height = H

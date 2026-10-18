@@ -195,7 +195,7 @@ export default function NuevoIngreso() {
 
   return (
     <div className="min-h-screen">
-      <PageHeader title={esEdicion ? 'Editar Ingreso' : 'Nuevo Ingreso'} back />
+      <PageHeader title={esEdicion ? 'Editar ingreso' : 'Nuevo ingreso'} back />
 
       <div className="px-4 pt-4 pb-6 space-y-4">
 
@@ -220,17 +220,20 @@ export default function NuevoIngreso() {
                 <input className="glass-input" style={{paddingLeft:'40px'}} placeholder="Buscar cliente..."
                        value={busqueda} onChange={e => setBusqueda(e.target.value)} autoFocus />
               </div>
-              {!busqueda.trim() && recientes.length > 0 && <p className="text-white/30 text-xs px-1">Recientes</p>}
+              {!busqueda.trim() && recientes.length > 0 && <p className="text-white/50 text-xs font-semibold px-1">Recientes</p>}
               {filtrados.length > 0 && (
-                <div className="space-y-1 max-h-52 overflow-y-auto">
-                  {filtrados.map(c => (
-                    <button key={c.id} onClick={() => seleccionar(c)} className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 active:bg-white/10 text-left" style={{background:'rgba(255,255,255,0.06)'}}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(201,162,74,0.20)'}}>
-                        <span className="text-amber-300 font-bold text-xs">{c.nombre[0].toUpperCase()}{c.apellido[0].toUpperCase()}</span>
+                <div className="max-h-56 overflow-y-auto -mx-1">
+                  {filtrados.map((c, idx) => (
+                    <button key={c.id} onClick={() => seleccionar(c)}
+                            className="w-full flex items-center gap-3 rounded-[10px] px-2 py-2.5 active:bg-white/10 text-left transition-colors duration-150"
+                            style={idx ? { boxShadow: 'inset 0 1px 0 var(--line)' } : undefined}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                           style={{background:'rgba(201,162,74,0.12)', border:'1px solid rgba(201,162,74,0.28)'}}>
+                        <span className="text-amber-300 font-bold text-xs">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
                       </div>
-                      <div>
-                        <p className="text-white text-sm font-semibold">{c.nombre} {c.apellido}</p>
-                        {c.telefono && <p className="text-white/40 text-xs">{c.telefono}</p>}
+                      <div className="min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">{c.nombre} {c.apellido}</p>
+                        {c.telefono && <p className="text-white/50 text-xs">{c.telefono}</p>}
                       </div>
                     </button>
                   ))}
@@ -284,15 +287,15 @@ export default function NuevoIngreso() {
           <div>
             <label className="glass-label">{pago2Activo ? 'Monto — primer método *' : 'Monto *'}</label>
             <div className="flex gap-2">
-              <div className="flex rounded-2xl overflow-hidden flex-shrink-0" style={{border:'1px solid rgba(255,255,255,0.20)'}}>
+              <div className="flex rounded-[12px] overflow-hidden flex-shrink-0" style={{border:'1px solid var(--line-strong)'}}>
                 {['USD','Bs'].map(m => {
                   const bloqueado = soloUsd && m === 'Bs'
                   return (
                     <button key={m} onClick={() => !bloqueado && setMoneda(m)}
                             className="px-4 py-3 text-sm font-bold transition-colors"
                             style={{
-                              background: form.moneda === m ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)',
-                              color: bloqueado ? 'rgba(255,255,255,0.20)' : 'white',
+                              background: form.moneda === m ? 'rgba(201,162,74,0.22)' : 'rgba(255,244,222,0.04)',
+                              color: bloqueado ? 'rgba(247,242,232,0.25)' : form.moneda === m ? '#e2c98a' : 'rgba(247,242,232,0.60)',
                               cursor: bloqueado ? 'not-allowed' : 'pointer'
                             }}>
                       {m}
@@ -370,15 +373,15 @@ export default function NuevoIngreso() {
               <div>
                 <label className="glass-label">Monto — segundo método *</label>
                 <div className="flex gap-2">
-                  <div className="flex rounded-2xl overflow-hidden flex-shrink-0" style={{border:'1px solid rgba(255,255,255,0.20)'}}>
+                  <div className="flex rounded-[12px] overflow-hidden flex-shrink-0" style={{border:'1px solid var(--line-strong)'}}>
                     {['USD','Bs'].map(m => {
                       const bloqueado = soloUsd2 && m === 'Bs'
                       return (
                         <button key={m} onClick={() => !bloqueado && setMoneda2(m)}
                                 className="px-4 py-3 text-sm font-bold transition-colors"
                                 style={{
-                                  background: pago2.moneda === m ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)',
-                                  color: bloqueado ? 'rgba(255,255,255,0.20)' : 'white',
+                                  background: pago2.moneda === m ? 'rgba(201,162,74,0.22)' : 'rgba(255,244,222,0.04)',
+                                  color: bloqueado ? 'rgba(247,242,232,0.25)' : pago2.moneda === m ? '#e2c98a' : 'rgba(247,242,232,0.60)',
                                   cursor: bloqueado ? 'not-allowed' : 'pointer'
                                 }}>
                           {m}
