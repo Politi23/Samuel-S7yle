@@ -80,13 +80,13 @@ export default function Tasa() {
         ) : data && (
           <div className="grid grid-cols-2 gap-3">
             <div className="glass-card text-center py-5"
-                 style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.22)'}}>
+                 style={{background:'rgba(124,192,147,0.10)', border:'1px solid rgba(124,192,147,0.22)'}}>
               <p className="text-xs text-emerald-300/65 font-semibold mb-2">1 USD</p>
               <p className="text-2xl font-bold text-emerald-300">{formatBs(data.usd)}</p>
               <p className="text-emerald-300/45 text-xs mt-1">bolívares</p>
             </div>
             <div className="glass-card text-center py-5"
-                 style={{background:'rgba(251,191,36,0.10)', border:'1px solid rgba(251,191,36,0.22)'}}>
+                 style={{background:'rgba(226,201,138,0.10)', border:'1px solid rgba(226,201,138,0.22)'}}>
               <p className="text-xs text-amber-300/65 font-semibold mb-2">1 EUR</p>
               <p className="text-2xl font-bold text-amber-300">{formatBs(data.eur)}</p>
               <p className="text-amber-300/45 text-xs mt-1">bolívares</p>
@@ -107,9 +107,9 @@ export default function Tasa() {
             <button onClick={() => { setDesde('usd'); setHacia('bs') }}
                     className="py-2.5 rounded-2xl text-xs font-semibold transition-all"
                     style={{
-                      background: desde === 'usd' && hacia === 'bs' ? 'rgba(52,211,153,0.25)' : 'rgba(52,211,153,0.09)',
-                      border: `1px solid ${desde === 'usd' && hacia === 'bs' ? 'rgba(52,211,153,0.50)' : 'rgba(52,211,153,0.20)'}`,
-                      color: '#6ee7b7'
+                      background: desde === 'usd' && hacia === 'bs' ? 'rgba(124,192,147,0.25)' : 'rgba(124,192,147,0.09)',
+                      border: `1px solid ${desde === 'usd' && hacia === 'bs' ? 'rgba(124,192,147,0.50)' : 'rgba(124,192,147,0.20)'}`,
+                      color: '#9fd3ae'
                     }}>
               USD → Bs
               {data.usd && <span className="block text-[10px] opacity-60 mt-0.5">1 USD = {formatBs(data.usd)} Bs</span>}
@@ -117,9 +117,9 @@ export default function Tasa() {
             <button onClick={() => { setDesde('eur'); setHacia('bs') }}
                     className="py-2.5 rounded-2xl text-xs font-semibold transition-all"
                     style={{
-                      background: desde === 'eur' && hacia === 'bs' ? 'rgba(251,191,36,0.25)' : 'rgba(251,191,36,0.09)',
-                      border: `1px solid ${desde === 'eur' && hacia === 'bs' ? 'rgba(251,191,36,0.50)' : 'rgba(251,191,36,0.20)'}`,
-                      color: '#fcd34d'
+                      background: desde === 'eur' && hacia === 'bs' ? 'rgba(226,201,138,0.25)' : 'rgba(226,201,138,0.09)',
+                      border: `1px solid ${desde === 'eur' && hacia === 'bs' ? 'rgba(226,201,138,0.50)' : 'rgba(226,201,138,0.20)'}`,
+                      color: '#e2c98a'
                     }}>
               EUR → Bs
               {data.eur && <span className="block text-[10px] opacity-60 mt-0.5">1 EUR = {formatBs(data.eur)} Bs</span>}
@@ -127,18 +127,18 @@ export default function Tasa() {
             <button onClick={() => { setDesde('bs'); setHacia('usd') }}
                     className="py-2.5 rounded-2xl text-xs font-semibold transition-all"
                     style={{
-                      background: desde === 'bs' && hacia === 'usd' ? 'rgba(52,211,153,0.25)' : 'rgba(52,211,153,0.09)',
-                      border: `1px solid ${desde === 'bs' && hacia === 'usd' ? 'rgba(52,211,153,0.50)' : 'rgba(52,211,153,0.20)'}`,
-                      color: '#6ee7b7'
+                      background: desde === 'bs' && hacia === 'usd' ? 'rgba(124,192,147,0.25)' : 'rgba(124,192,147,0.09)',
+                      border: `1px solid ${desde === 'bs' && hacia === 'usd' ? 'rgba(124,192,147,0.50)' : 'rgba(124,192,147,0.20)'}`,
+                      color: '#9fd3ae'
                     }}>
               Bs → USD
             </button>
             <button onClick={() => { setDesde('bs'); setHacia('eur') }}
                     className="py-2.5 rounded-2xl text-xs font-semibold transition-all"
                     style={{
-                      background: desde === 'bs' && hacia === 'eur' ? 'rgba(251,191,36,0.25)' : 'rgba(251,191,36,0.09)',
-                      border: `1px solid ${desde === 'bs' && hacia === 'eur' ? 'rgba(251,191,36,0.50)' : 'rgba(251,191,36,0.20)'}`,
-                      color: '#fcd34d'
+                      background: desde === 'bs' && hacia === 'eur' ? 'rgba(226,201,138,0.25)' : 'rgba(226,201,138,0.09)',
+                      border: `1px solid ${desde === 'bs' && hacia === 'eur' ? 'rgba(226,201,138,0.50)' : 'rgba(226,201,138,0.20)'}`,
+                      color: '#e2c98a'
                     }}>
               Bs → EUR
             </button>
@@ -165,7 +165,7 @@ export default function Tasa() {
                           onClick={() => { if (m.id === hacia) intercambiar(); else setDesde(m.id) }}
                           className="py-2.5 text-sm font-bold transition-colors"
                           style={{
-                            background: desde === m.id ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.05)',
+                            background: desde === m.id ? 'rgba(201,162,74,0.20)' : 'rgba(255,255,255,0.05)',
                             color: desde === m.id ? 'white' : 'rgba(255,255,255,0.38)'
                           }}>
                     {m.label}
@@ -187,7 +187,7 @@ export default function Tasa() {
                           onClick={() => { if (m.id === desde) intercambiar(); else setHacia(m.id) }}
                           className="py-2.5 text-sm font-bold transition-colors"
                           style={{
-                            background: hacia === m.id ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.05)',
+                            background: hacia === m.id ? 'rgba(201,162,74,0.20)' : 'rgba(255,255,255,0.05)',
                             color: hacia === m.id ? 'white' : 'rgba(255,255,255,0.38)'
                           }}>
                     {m.label}

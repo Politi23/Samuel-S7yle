@@ -139,8 +139,8 @@ export default function Egresos() {
                 <p className="text-sm font-bold text-red-300">${totalEgresosMesUsd.toFixed(0)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-semibold mb-0.5" style={{color: balancePositivo ? 'rgba(110,231,183,0.60)' : 'rgba(252,165,165,0.60)'}}>Disponible</p>
-                <p className="text-sm font-bold" style={{color: balancePositivo ? '#6ee7b7' : '#fca5a5'}}>
+                <p className="text-[10px] font-semibold mb-0.5" style={{color: balancePositivo ? 'rgba(159,211,174,0.60)' : 'rgba(252,165,165,0.60)'}}>Disponible</p>
+                <p className="text-sm font-bold" style={{color: balancePositivo ? '#9fd3ae' : '#fca5a5'}}>
                   {balancePositivo ? '+' : ''}${balance.toFixed(0)}
                 </p>
               </div>

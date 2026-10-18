@@ -65,7 +65,7 @@ export default function Clientes() {
           <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
                   className="w-full glass-card flex items-center gap-3 active:bg-white/15 transition-colors text-left">
             <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{background:'rgba(217,119,6,0.20)', border:'1px solid rgba(217,119,6,0.35)'}}>
+                 style={{background:'rgba(201,162,74,0.20)', border:'1px solid rgba(201,162,74,0.35)'}}>
               <span className="text-amber-300 font-bold text-sm">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
             </div>
             <div className="flex-1 min-w-0">
@@ -73,7 +73,7 @@ export default function Clientes() {
                 {c.nombre} {c.apellido}
                 {c.origen === 'qr' && (
                   <span className="ml-2 align-middle text-[10px] font-bold text-amber-300 px-1.5 py-0.5 rounded-md"
-                        style={{background:'rgba(251,191,36,0.12)', border:'1px solid rgba(251,191,36,0.25)'}}>QR</span>
+                        style={{background:'rgba(226,201,138,0.12)', border:'1px solid rgba(226,201,138,0.25)'}}>QR</span>
                 )}
               </p>
               {c.telefono && <p className="text-white/50 text-sm">{c.telefono}</p>}

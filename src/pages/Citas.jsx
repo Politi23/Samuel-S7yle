@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
-import { Plus, Calendar, Clock, ChevronLeft, ChevronRight, Trash2, Edit2, CheckCircle2, DollarSign, CalendarPlus } from 'lucide-react'
+import { Plus, Calendar, ChevronLeft, ChevronRight, Trash2, Edit2, CheckCircle2, DollarSign, CalendarPlus } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE, toFechaVE, ahoraVE } from '../lib/fecha'
 
@@ -10,8 +10,8 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 
 const ESTADOS = ['pendiente', 'atendida', 'cancelada', 'no_asistio']
 const ESTADO_CFG = {
-  pendiente:  { label: 'Pendiente',      bg: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.60)' },
-  atendida:   { label: 'Atendida',       bg: 'rgba(52,211,153,0.20)',  color: '#6ee7b7' },
+  pendiente:  { label: 'Pendiente',      bg: 'rgba(201,162,74,0.12)',  color: '#e2c98a' },
+  atendida:   { label: 'Atendida',       bg: 'rgba(124,192,147,0.20)',  color: '#9fd3ae' },
   cancelada:  { label: 'Cancelada',      bg: 'rgba(239,68,68,0.22)',   color: '#fca5a5' },
   no_asistio: { label: 'No se presentó', bg: 'rgba(251,146,60,0.22)',  color: '#fdba74' },
 }
@@ -47,7 +47,7 @@ function EstadoBadge({ cita, onCambiar }) {
       </button>
       {abierto && (
         <div className="absolute right-0 bottom-8 z-30 rounded-2xl overflow-hidden shadow-xl"
-             style={{background:'rgba(20,12,0,0.97)', border:'1px solid rgba(255,255,255,0.18)', minWidth:'150px'}}>
+             style={{background:'var(--surface-2)', border:'1px solid var(--line-strong)', minWidth:'150px'}}>
           {ESTADOS.map(e => {
             const c = ESTADO_CFG[e]
             return (
@@ -140,25 +140,25 @@ export default function Citas() {
     const pasada = esPassada(c.fecha, c.hora)
     return (
       <div className="glass-card flex items-center gap-3" style={{opacity: pasada && (c.estado === 'pendiente' || !c.estado) ? 0.55 : 1}}>
-        <div className="w-1 self-stretch rounded-full flex-shrink-0"
-             style={{background: pasada ? 'rgba(255,255,255,0.18)' : 'rgba(217,119,6,0.80)'}} />
+        <span className="w-[66px] flex-shrink-0 text-[13px] font-bold"
+              style={{color: pasada ? 'rgba(247,242,232,0.50)' : '#e2c98a'}}>
+          {c.hora ? formatHora(c.hora) : 'Sin hora'}
+        </span>
         <button className="flex-1 min-w-0 text-left" onClick={() => navigate(`/clientes/${c.cliente_id}`)}>
           <p className="text-white font-semibold truncate">{c.cliente_nombre}</p>
-          <p className="text-white/50 text-sm truncate">{c.motivo}</p>
-          {mostrarFecha && <p className="text-white/30 text-xs">{c.fecha ? c.fecha.split('-').reverse().join('/') : ''}</p>}
-          {c.notas && <p className="text-white/30 text-xs italic truncate">{c.notas}</p>}
+          <p className="text-white/55 text-sm truncate">{c.motivo}</p>
+          {mostrarFecha && <p className="text-white/40 text-xs">{c.fecha ? c.fecha.split('-').reverse().join('/') : ''}</p>}
+          {c.notas && <p className="text-white/40 text-xs italic truncate">{c.notas}</p>}
         </button>
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <div className="flex items-center gap-1">
-            <Clock size={13} className="text-amber-300" />
-            <span className="text-amber-300 text-sm font-semibold">{formatHora(c.hora)}</span>
-          </div>
           <EstadoBadge cita={c} onCambiar={e => cambiarEstado(c, e)} />
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(`/citas/${c.id}/editar`)} className="text-white/35 active:text-white/70">
-              <Edit2 size={14} />
+          <div className="flex items-center gap-1">
+            <button onClick={() => navigate(`/citas/${c.id}/editar`)} aria-label="Editar cita"
+                    className="text-white/45 active:text-white/80 p-1.5">
+              <Edit2 size={15} />
             </button>
-            <button onClick={() => setConfirmar(c)} className="text-red-400/45 active:text-red-400">
+            <button onClick={() => setConfirmar(c)} aria-label="Eliminar cita"
+                    className="text-red-400/60 active:text-red-400 p-1.5">
               <Trash2 size={15} />
             </button>
           </div>
@@ -185,7 +185,7 @@ export default function Citas() {
             <button key={v} onClick={() => setVista(v)}
                     className="py-2.5 rounded-2xl text-sm font-semibold transition-all"
                     style={{
-                      background: vista === v ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)',
+                      background: vista === v ? 'rgba(201,162,74,0.20)' : 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.15)',
                       color: vista === v ? 'white' : 'rgba(255,255,255,0.40)'
                     }}>
@@ -216,12 +216,12 @@ export default function Citas() {
                     <button key={str} onClick={() => setDiaSeleccionado(str)}
                             className="flex flex-col items-center py-2 rounded-2xl transition-all"
                             style={{
-                              background: activo ? 'rgba(255,255,255,0.22)' : esHoy ? 'rgba(255,255,255,0.09)' : 'transparent',
+                              background: activo ? 'rgba(201,162,74,0.20)' : esHoy ? 'rgba(255,255,255,0.09)' : 'transparent',
                               border: activo ? '1px solid rgba(255,255,255,0.35)' : '1px solid transparent',
                             }}>
                       <span className="text-[10px] font-medium" style={{color: activo ? 'rgba(255,255,255,0.70)' : 'rgba(255,255,255,0.38)'}}>{DIAS[d.getDay()]}</span>
                       <span className="text-sm font-bold mt-0.5" style={{color: activo ? 'white' : esHoy ? 'rgba(255,255,255,0.90)' : 'rgba(255,255,255,0.60)'}}>{d.getDate()}</span>
-                      {tieneCitas && <span className="w-1.5 h-1.5 rounded-full mt-0.5" style={{background: activo ? 'white' : 'rgba(217,119,6,0.80)'}} />}
+                      {tieneCitas && <span className="w-1.5 h-1.5 rounded-full mt-0.5" style={{background: activo ? 'white' : 'rgba(201,162,74,0.80)'}} />}
                     </button>
                   )
                 })}
@@ -254,7 +254,7 @@ export default function Citas() {
                 {citasProximas.map(c => (
                   <div key={c.id} className="glass-card flex items-center gap-3">
                     <div className="rounded-2xl px-3 py-2 text-center flex-shrink-0"
-                         style={{background:'rgba(217,119,6,0.15)', border:'1px solid rgba(217,119,6,0.25)', minWidth:'46px'}}>
+                         style={{background:'rgba(201,162,74,0.15)', border:'1px solid rgba(201,162,74,0.25)', minWidth:'46px'}}>
                       <p className="text-[10px] text-amber-300 font-bold leading-none">
                         {MESES[new Date(c.fecha+'T12:00').getMonth()].slice(0,3).toUpperCase()}
                       </p>
@@ -315,7 +315,7 @@ export default function Citas() {
           <div className="glass-strong w-full max-w-sm rounded-3xl p-6 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                   style={{background:'rgba(52,211,153,0.20)', border:'1px solid rgba(52,211,153,0.30)'}}>
+                   style={{background:'rgba(124,192,147,0.20)', border:'1px solid rgba(124,192,147,0.30)'}}>
                 <CheckCircle2 size={20} className="text-emerald-400" />
               </div>
               <div>
@@ -332,13 +332,13 @@ export default function Citas() {
                 </button>
                 <button onClick={() => { navigate(`/ingresos/nuevo?cliente=${cobrarCita.cliente_id}`); setCobrarCita(null) }}
                         className="py-3 rounded-2xl text-white font-semibold text-sm flex items-center justify-center gap-2"
-                        style={{background:'rgba(52,211,153,0.40)', border:'1px solid rgba(52,211,153,0.50)'}}>
+                        style={{background:'rgba(124,192,147,0.40)', border:'1px solid rgba(124,192,147,0.50)'}}>
                   <DollarSign size={15} /> Cobrar ahora
                 </button>
               </div>
               <button onClick={() => abrirReagendar(cobrarCita)}
                       className="w-full py-3 rounded-2xl text-white font-semibold text-sm flex items-center justify-center gap-2"
-                      style={{background:'rgba(217,119,6,0.25)', border:'1px solid rgba(217,119,6,0.40)'}}>
+                      style={{background:'rgba(201,162,74,0.25)', border:'1px solid rgba(201,162,74,0.40)'}}>
                 <CalendarPlus size={15} /> Reagendar próxima cita
               </button>
             </div>
@@ -352,7 +352,7 @@ export default function Citas() {
           <div className="glass-strong w-full max-w-sm rounded-3xl p-6 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                   style={{background:'rgba(217,119,6,0.20)', border:'1px solid rgba(217,119,6,0.30)'}}>
+                   style={{background:'rgba(201,162,74,0.20)', border:'1px solid rgba(201,162,74,0.30)'}}>
                 <CalendarPlus size={20} className="text-amber-400" />
               </div>
               <div>
@@ -371,7 +371,7 @@ export default function Citas() {
               </button>
               <button onClick={confirmarReagendar}
                       className="py-3 rounded-2xl text-white font-semibold text-sm flex items-center justify-center gap-2"
-                      style={{background:'rgba(217,119,6,0.45)', border:'1px solid rgba(217,119,6,0.55)'}}>
+                      style={{background:'rgba(201,162,74,0.45)', border:'1px solid rgba(201,162,74,0.55)'}}>
                 <CalendarPlus size={15} /> Continuar
               </button>
             </div>

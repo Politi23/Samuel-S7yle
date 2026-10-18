@@ -87,7 +87,7 @@ export default function QrRegistro() {
           </button>
           <button onClick={copiarLink}
                   className="glass-card flex items-center justify-center gap-2 py-3 text-sm font-semibold active:bg-white/10"
-                  style={{ color: copiado ? '#34d399' : 'rgba(255,255,255,0.75)' }}>
+                  style={{ color: copiado ? '#7cc093' : 'rgba(255,255,255,0.75)' }}>
             {copiado ? <CheckCircle2 size={16} /> : <Copy size={16} />}
             {copiado ? 'Copiado' : 'Copiar link'}
           </button>

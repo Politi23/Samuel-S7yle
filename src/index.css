@@ -2,153 +2,169 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Tokens: negro mate + oro del escudo ─────────────────────── */
+:root {
+  --bg:          #0b0a08;
+  --surface:     #15130f;
+  --surface-2:   #1c1915;
+  --line:        rgba(255, 236, 200, 0.08);
+  --line-strong: rgba(255, 236, 200, 0.14);
+  --ink:         #f7f2e8;
+  --ink-2:       rgba(247, 242, 232, 0.70);
+  --ink-3:       rgba(247, 242, 232, 0.50);
+  --gold:        #c9a24a;
+  --gold-hi:     #e2c98a;
+  --gold-lo:     #9c7a2c;
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
 }
 
+html { background: var(--bg); }
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
   overflow-x: hidden;
 }
+
+h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; }
 
 input, select, textarea, button {
   font-size: 16px !important;
   font-family: inherit;
 }
 
+:focus-visible {
+  outline: 2px solid rgba(226, 201, 138, 0.85);
+  outline-offset: 2px;
+}
+
+/* ── Ambiente: un brillo dorado quieto sobre negro ───────────── */
 .bg-mesh {
-  background: linear-gradient(135deg, #0f0a00 0%, #1a1000 40%, #0d0d0d 100%);
+  background:
+    radial-gradient(110% 55% at 50% -12%, rgba(201, 162, 74, 0.16), transparent 62%),
+    radial-gradient(70% 45% at 105% 105%, rgba(201, 162, 74, 0.07), transparent 70%),
+    var(--bg);
 }
 
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.50;
-  animation: floatOrb 20s ease-in-out infinite;
+  filter: blur(90px);
+  pointer-events: none;
 }
 
 .orb-1 {
-  width: 420px; height: 420px;
-  background: radial-gradient(circle, #d97706, #92400e);
-  top: -100px; left: -80px;
-  animation-duration: 18s;
+  width: 380px; height: 380px;
+  background: radial-gradient(circle, rgba(201, 162, 74, 0.55), rgba(156, 122, 44, 0));
+  top: -160px; left: -120px;
+  opacity: 0.35;
 }
 
 .orb-2 {
-  width: 350px; height: 350px;
-  background: radial-gradient(circle, #b45309, #78350f);
-  top: 40%; right: -100px;
-  animation-duration: 22s;
-  animation-delay: -7s;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(201, 162, 74, 0.40), rgba(156, 122, 44, 0));
+  top: 48%; right: -180px;
+  opacity: 0.22;
 }
 
-.orb-3 {
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, #f59e0b, #b45309);
-  bottom: 80px; left: 20%;
-  animation-duration: 25s;
-  animation-delay: -13s;
-}
+.orb-3, .orb-4 { display: none; }
 
-.orb-4 {
-  width: 250px; height: 250px;
-  background: radial-gradient(circle, #d97706, #92400e);
-  top: 55%; left: -60px;
-  animation-duration: 20s;
-  animation-delay: -4s;
-}
-
-@keyframes floatOrb {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(30px, -40px) scale(1.07); }
-  66%       { transform: translate(-20px, 30px) scale(0.95); }
-}
-
-.glass {
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  background: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.30);
+/* ── Superficies ─────────────────────────────────────────────── */
+.glass,
+.glass-card,
+.glass-strong {
+  background: linear-gradient(180deg, rgba(30, 27, 22, 0.94), rgba(21, 19, 15, 0.94));
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.05), 0 14px 32px -18px rgba(0, 0, 0, 0.75);
 }
 
 .glass-card {
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 20px;
+  border-radius: 18px;
   padding: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.35);
 }
 
-.glass-strong {
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45);
-}
+.glass-strong { border-color: var(--line-strong); }
 
 .glass-nav {
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  background: rgba(15, 10, 0, 0.60);
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.35);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  background: rgba(11, 10, 8, 0.86);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .glass-header {
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  background: rgba(15, 10, 0, 0.50);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  background: rgba(11, 10, 8, 0.80);
+  border-bottom: 1px solid var(--line);
 }
 
+/* ── Formularios ─────────────────────────────────────────────── */
 .glass-input {
   width: 100%;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.20);
-  border-radius: 14px;
-  padding: 11px 14px;
-  color: white;
+  background: rgba(255, 244, 222, 0.035);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--ink);
   outline: none;
-  transition: all 0.2s;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  transition: border-color 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out), background-color 0.18s var(--ease-out);
   -webkit-appearance: none;
   appearance: none;
 }
 
-.glass-input::placeholder { color: rgba(255,255,255,0.35); }
+.glass-input::placeholder { color: rgba(247, 242, 232, 0.42); }
 
 .glass-input:focus {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(217, 119, 6, 0.60);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 3px rgba(217,119,6,0.15);
+  background: rgba(255, 244, 222, 0.06);
+  border-color: rgba(201, 162, 74, 0.70);
+  box-shadow: 0 0 0 3px rgba(201, 162, 74, 0.16);
 }
+
+.glass-input:focus-visible { outline: none; }
 
 .glass-input.error {
-  border-color: rgba(248, 113, 113, 0.7);
-  box-shadow: 0 0 0 3px rgba(248,113,113,0.15);
+  border-color: rgba(248, 113, 113, 0.70);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.14);
 }
 
-.glass-input option { background: #1a1000; color: white; }
+.glass-input option { background: var(--surface-2); color: var(--ink); }
 
-.glass-btn-primary {
-  background: rgba(255, 255, 255, 0.92);
-  color: #92400e;
+.glass-label {
+  display: block;
+  font-size: 11.5px;
   font-weight: 700;
-  border-radius: 16px;
+  color: var(--ink-2);
+  margin-bottom: 7px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Botones ─────────────────────────────────────────────────── */
+.glass-btn-primary {
+  background: linear-gradient(180deg, #e3c77f 0%, #c9a24a 55%, #b48e3b 100%);
+  color: #17120a;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  border-radius: 14px;
+  min-height: 50px;
   padding: 13px 20px;
-  border: none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,1);
-  transition: all 0.15s;
+  border: 1px solid rgba(255, 228, 165, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 230, 0.55), 0 8px 22px -10px rgba(201, 162, 74, 0.55);
+  transition: filter 0.15s var(--ease-out), transform 0.15s var(--ease-out), opacity 0.15s;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -157,64 +173,59 @@ input, select, textarea, button {
   width: 100%;
 }
 
-.glass-btn-primary:active {
-  background: rgba(255, 255, 255, 0.78);
-  transform: scale(0.98);
-}
+.glass-btn-primary:hover { filter: brightness(1.05); }
+.glass-btn-primary:active { filter: brightness(0.94); transform: scale(0.985); }
+.glass-btn-primary:disabled { cursor: default; filter: saturate(0.6); }
 
 .glass-btn-icon {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 14px;
+  background: rgba(255, 244, 222, 0.045);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
   padding: 9px;
-  color: white;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28);
-  transition: all 0.15s;
+  color: var(--ink);
+  transition: background-color 0.15s var(--ease-out), border-color 0.15s var(--ease-out), transform 0.15s var(--ease-out);
   cursor: pointer;
 }
 
-.glass-btn-icon:active {
-  background: rgba(255, 255, 255, 0.22);
-  transform: scale(0.95);
-}
+.glass-btn-icon:hover { background: rgba(255, 244, 222, 0.08); }
+.glass-btn-icon:active { background: rgba(255, 244, 222, 0.12); transform: scale(0.95); }
 
-.glass-btn-icon.danger { background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.38); }
-.glass-btn-icon.danger:active { background: rgba(239,68,68,0.38); }
-
-.glass-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.60);
-  margin-bottom: 6px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
+.glass-btn-icon.danger { background: rgba(239, 68, 68, 0.16); border-color: rgba(239, 68, 68, 0.34); }
+.glass-btn-icon.danger:active { background: rgba(239, 68, 68, 0.30); }
 
 .glass-chip {
-  backdrop-filter: blur(8px);
-  background: rgba(255,255,255,0.10);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255, 244, 222, 0.06);
+  border: 1px solid var(--line-strong);
   border-radius: 20px;
   padding: 4px 12px;
   font-size: 12px;
-  color: rgba(255,255,255,0.82);
+  color: var(--ink-2);
+}
+
+/* Filete dorado: separador fino para títulos de sección */
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 162, 74, 0), rgba(201, 162, 74, 0.55), rgba(201, 162, 74, 0));
 }
 
 ::-webkit-scrollbar { width: 0; }
 
-.page-enter { animation: pageIn 0.25s ease forwards; }
+/* ── Movimiento ──────────────────────────────────────────────── */
+.page-enter { animation: pageIn 0.22s var(--ease-out) both; }
 
 @keyframes pageIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.animate-toast-in { animation: toastIn 0.22s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.animate-toast-in { animation: toastIn 0.22s var(--ease-out) both; }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(-10px) scale(0.95); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter, .animate-toast-in { animation: none; }
+  .glass-btn-primary:active, .glass-btn-icon:active { transform: none; }
 }

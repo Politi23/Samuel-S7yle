@@ -3,9 +3,8 @@ import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { useBcv } from '../hooks/useBcv'
 import { useNavigate } from 'react-router-dom'
-import { Users, DollarSign, TrendingUp, Clock, Plus, ChevronRight, LogOut, UserPlus, CalendarDays, ArrowDownCircle, AlertTriangle, Search, X, BarChart2, CheckCircle2, Gift } from 'lucide-react'
-import PageHeader from '../components/PageHeader'
-import { hoyVE, toFechaVE } from '../lib/fecha'
+import { Users, Clock, Plus, ChevronRight, LogOut, UserPlus, CalendarDays, AlertTriangle, Search, X, BarChart2, CheckCircle2, Gift } from 'lucide-react'
+import { hoyVE, toFechaVE, ahoraVE } from '../lib/fecha'
 import Logo from '../components/Logo'
 
 const MOTIVOS_RAPIDOS = ['Corte de cabello','Corte + Barba','Cejas','Colorimetría','Pigmentación','Lavado','Otro']
@@ -162,7 +161,8 @@ export default function Dashboard() {
 
   const ultimosPagos    = [...ingresos].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 3)
   const ultimosClientes = [...clientes].slice(0, 3)
-  const fechaLabel = hoyDate.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'long' })
+  const fechaLargo = hoyDate.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'long' })
+  const fechaLabel = fechaLargo.charAt(0).toUpperCase() + fechaLargo.slice(1)
 
   // ── Cumpleaños próximos 7 días ──
   const hoyMMDD = hoyStr.slice(5)
@@ -179,388 +179,371 @@ export default function Dashboard() {
     return false
   })
 
+  const saludo = (() => {
+    const h = parseInt(ahoraVE().slice(0, 2))
+    return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches'
+  })()
+  const totalAnioUsd = ingresosAnio.reduce((a, i) => {
+    if (i.moneda === 'USD') return a + Number(i.monto)
+    const t = Number(i.tasa_bcv)
+    return t ? a + Number(i.monto) / t : a
+  }, 0)
+  const verMes = vistaIngresos === 'mes'
+  const balance = totalMesUsd - totalEgresosEnUsd
+  const linea = { borderTop: '1px solid var(--line)' }
+
   return (
     <div className="min-h-screen">
-      <PageHeader
-        title="S7tyle"
-        action={
-          <div className="flex gap-2">
-            <button onClick={() => navigate('/estadisticas')} className="glass-btn-icon w-10 h-10 flex items-center justify-center">
-              <BarChart2 size={17} className="text-white/70" />
-            </button>
-            <button onClick={logout} className="glass-btn-icon w-10 h-10 flex items-center justify-center">
-              <LogOut size={18} className="text-white/70" />
-            </button>
-          </div>
-        }
-      />
+
+      {/* ── Marca ── */}
+      <header className="relative px-4 pt-5 pb-2 text-center">
+        <div className="absolute top-4 left-4">
+          <button onClick={() => navigate('/estadisticas')} aria-label="Estadísticas"
+                  className="glass-btn-icon w-10 h-10 flex items-center justify-center">
+            <BarChart2 size={17} className="text-white/75" />
+          </button>
+        </div>
+        <div className="absolute top-4 right-4">
+          <button onClick={logout} aria-label="Cerrar sesión"
+                  className="glass-btn-icon w-10 h-10 flex items-center justify-center">
+            <LogOut size={17} className="text-white/75" />
+          </button>
+        </div>
+        <Logo size={124} />
+        <h1 className="text-white text-[22px] font-extrabold mt-3">{saludo}, Samuel</h1>
+        <div className="flex items-center justify-center gap-2 mt-1.5 text-[13px]">
+          <span className="text-white/55">{fechaLabel}</span>
+          {tasaHoy && (
+            <>
+              <span className="text-white/25" aria-hidden="true">·</span>
+              <button onClick={() => navigate('/tasa')} className="inline-flex items-center gap-1 font-semibold">
+                <span className="text-amber-300">BCV €</span>
+                <span className="text-white/85">{parseFloat(tasaHoy.toFixed(2))} Bs</span>
+              </button>
+            </>
+          )}
+        </div>
+      </header>
 
       <div className="px-4 pt-4 pb-6 space-y-4">
 
-        {/* Saludo */}
-        <div className="glass-card text-center py-5">
-          <Logo size={128} style={{ marginBottom: -10 }} />
-          <p className="text-white/50 text-sm">Bienvenido</p>
-          <h2 className="text-white text-2xl font-bold mt-0.5">Samuel</h2>
-          <p className="text-white/40 text-xs mt-1 capitalize">{fechaLabel}</p>
-          {tasaHoy && (
-            <button onClick={() => navigate('/tasa')}
-                    className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-2xl"
-                    style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.14)'}}>
-              <TrendingUp size={11} className="text-amber-300" />
-              <span className="text-amber-300 text-xs font-semibold">BCV €</span>
-              <span className="text-white text-xs font-bold">{parseFloat(tasaHoy.toFixed(4))} Bs</span>
+        {/* ── Hoy ── */}
+        <section className="glass-card" style={{ padding: 18 }}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-white/60 text-[13px] font-bold">Ingresos de hoy</h2>
+            <button onClick={() => navigate('/ingresos')} className="text-amber-300 text-xs font-semibold">Ver ingresos</button>
+          </div>
+          <p className="text-white text-[40px] font-extrabold leading-none mt-3" style={{ letterSpacing: '-0.03em' }}>
+            <span className="text-amber-300 text-[26px] align-top mr-0.5" style={{ lineHeight: '34px' }}>$</span>
+            {totalHoyUsd.toFixed(2)}
+          </p>
+          <p className="text-white/55 text-[13px] mt-2">
+            {ingresosHoy.length > 0 ? (
+              <>
+                {ingresosHoy.length} {ingresosHoy.length === 1 ? 'cobro' : 'cobros'}
+                {hoyUsdDirecto > 0 && ` · $${hoyUsdDirecto.toFixed(2)} en USD`}
+                {hoyBs > 0 && ` · Bs. ${hoyBs.toFixed(2)}`}
+              </>
+            ) : 'Todavía no hay cobros hoy'}
+          </p>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            <button onClick={() => navigate('/ingresos/nuevo')} className="glass-btn-primary" style={{ minHeight: 46, padding: '11px 14px' }}>
+              <Plus size={17} strokeWidth={2.5} /> Cobro
             </button>
-          )}
-        </div>
+            <button onClick={abrirCitaRapida}
+                    className="flex items-center justify-center gap-2 rounded-[14px] font-bold text-white min-h-[46px] active:scale-[0.985] transition-transform"
+                    style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid rgba(255,236,200,0.16)' }}>
+              <CalendarDays size={16} className="text-amber-300" /> Cita
+            </button>
+          </div>
+        </section>
 
-        {/* Resumen semanal */}
+        {/* ── Resumen semanal ── */}
         {mostrarResumenSemanal && (
-          <div className="glass-card space-y-3" style={{background:'rgba(217,119,6,0.12)', border:'1px solid rgba(217,119,6,0.30)'}}>
+          <section className="glass-card space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BarChart2 size={15} className="text-amber-300" />
-                <span className="text-amber-200 text-sm font-semibold">Semana pasada</span>
-                <span className="text-white/30 text-xs">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-white text-[15px] font-bold">Semana pasada</h2>
+                <span className="text-white/45 text-xs">
                   {lunesPasado.getDate()}/{lunesPasado.getMonth()+1} – {domingosPasado.getDate()}/{domingosPasado.getMonth()+1}
                 </span>
               </div>
-              <button onClick={dismissResumen} className="text-white/30 active:text-white/60 p-1">
-                <X size={14} />
+              <button onClick={dismissResumen} aria-label="Ocultar resumen" className="text-white/45 active:text-white/70 p-2 -m-2">
+                <X size={16} />
               </button>
             </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-2xl p-2.5 text-center" style={{background:'rgba(52,211,153,0.15)', border:'1px solid rgba(52,211,153,0.25)'}}>
-                <p className="text-emerald-300 text-xl font-bold">{semAtendidas}</p>
-                <p className="text-emerald-300/60 text-[10px] font-semibold mt-0.5">Atendidas</p>
-              </div>
-              <div className="rounded-2xl p-2.5 text-center" style={{background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.22)'}}>
-                <p className="text-red-300 text-xl font-bold">{semCanceladas + semNoAsistio}</p>
-                <p className="text-red-300/60 text-[10px] font-semibold mt-0.5">Canceladas</p>
-              </div>
-              <div className="rounded-2xl p-2.5 text-center" style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.18)'}}>
-                <p className="text-emerald-200 text-xl font-bold">${semIngresoUsd.toFixed(0)}</p>
-                <p className="text-emerald-200/60 text-[10px] font-semibold mt-0.5">USD</p>
-              </div>
+            <div className="grid grid-cols-3">
+              {[
+                [semAtendidas, 'Atendidas', 'text-white'],
+                [semCanceladas + semNoAsistio, 'Canceladas', 'text-red-300'],
+                [`$${semIngresoUsd.toFixed(0)}`, 'Ingresos', 'text-amber-200'],
+              ].map(([v, l, c], idx) => (
+                <div key={l} className="text-center px-1" style={idx ? { borderLeft: '1px solid var(--line)' } : undefined}>
+                  <p className={`${c} text-xl font-extrabold`}>{v}</p>
+                  <p className="text-white/50 text-[11px] font-semibold mt-0.5">{l}</p>
+                </div>
+              ))}
             </div>
-
             {citasEstaSem > 0 && (
-              <div className="flex items-center gap-2 rounded-2xl px-3 py-2"
-                   style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.10)'}}>
-                <CalendarDays size={13} className="text-amber-300 flex-shrink-0" />
-                <p className="text-white/65 text-xs">
-                  Esta semana tienes <span className="text-white font-semibold">{citasEstaSem} {citasEstaSem === 1 ? 'cita' : 'citas'}</span> pendientes
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Cumpleaños */}
-        {cumpleHoy.length > 0 && cumpleHoy.map(c => (
-          <div key={c.id} className="glass-card flex items-center gap-3"
-               style={{background:'rgba(236,72,153,0.12)', border:'1px solid rgba(236,72,153,0.35)'}}>
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                 style={{background:'rgba(236,72,153,0.20)', border:'1px solid rgba(236,72,153,0.40)'}}>
-              <Gift size={19} className="text-pink-300" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-pink-200 text-xs font-semibold">Cumpleanos hoy</p>
-              <p className="text-white font-bold truncate">{c.nombre} {c.apellido}</p>
-              <p className="text-pink-300/70 text-xs">Servicio gratis</p>
-            </div>
-            <button onClick={() => navigate(`/clientes/${c.id}`)} className="text-white/35 active:text-white/70">
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        ))}
-        {cumpleProximos.length > 0 && (
-          <div className="glass-card space-y-2" style={{background:'rgba(139,92,246,0.10)', border:'1px solid rgba(139,92,246,0.25)'}}>
-            <div className="flex items-center gap-2">
-              <Gift size={14} className="text-violet-300" />
-              <span className="text-violet-200 text-sm font-semibold">Cumpleanos esta semana</span>
-            </div>
-            {cumpleProximos.map(c => {
-              const [, mm, dd] = c.fecha_nacimiento.split('-')
-              return (
-                <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
-                        className="w-full flex items-center gap-3 rounded-2xl px-3 py-2 active:bg-white/5 text-left"
-                        style={{background:'rgba(255,255,255,0.05)'}}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                       style={{background:'rgba(139,92,246,0.20)'}}>
-                    <span className="text-violet-300 font-bold text-xs">{c.nombre[0].toUpperCase()}{c.apellido[0].toUpperCase()}</span>
-                  </div>
-                  <span className="text-white text-sm flex-1">{c.nombre} {c.apellido}</span>
-                  <span className="text-violet-300 text-xs font-semibold">{dd}/{mm}</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Stats — 2x2 */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="glass-card flex flex-col items-center gap-1 py-5">
-            <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center mb-1">
-              <Users size={19} className="text-white" />
-            </div>
-            <p className="text-2xl font-bold text-white">{clientes.length}</p>
-            <p className="text-xs text-white/50">Clientes</p>
-          </div>
-          <div className="glass-card flex flex-col items-center gap-1 py-5">
-            <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center mb-1">
-              <Clock size={19} className="text-white" />
-            </div>
-            <p className="text-2xl font-bold text-white">{citasHoy.length}</p>
-            <p className="text-xs text-white/50">Citas hoy</p>
-          </div>
-          <div className="glass-card flex flex-col items-center gap-1 py-5">
-            <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center mb-1">
-              <UserPlus size={19} className="text-white" />
-            </div>
-            <p className="text-2xl font-bold text-white">{clientesNuevosMes}</p>
-            <p className="text-xs text-white/50">Nuevos {MESES[mes].slice(0,3)}</p>
-          </div>
-          <div className="glass-card flex flex-col items-center gap-1 py-5">
-            <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center mb-1">
-              <CalendarDays size={19} className="text-white" />
-            </div>
-            <p className="text-2xl font-bold text-white">{citasMesActual}</p>
-            <p className="text-xs text-white/50">Citas {MESES[mes].slice(0,3)}</p>
-            {pctCitas !== null && (
-              <p className="text-[10px] font-semibold mt-0.5" style={{color: pctCitas >= 0 ? '#6ee7b7' : '#fca5a5'}}>
-                {pctCitas >= 0 ? '↑' : '↓'} {Math.abs(pctCitas).toFixed(0)}% vs {MESES[mesPasado].slice(0,3)}
+              <p className="text-white/60 text-xs pt-3" style={linea}>
+                Esta semana tienes <span className="text-white font-semibold">{citasEstaSem} {citasEstaSem === 1 ? 'cita pendiente' : 'citas pendientes'}</span>
               </p>
             )}
-          </div>
-        </div>
+          </section>
+        )}
 
-        {/* Ingresos — card con toggle mes/año */}
-        <div className="glass-card space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={15} className="text-white/60" />
-              <span className="text-white/60 text-sm font-semibold">
-                {vistaIngresos === 'mes' ? MESES[mes] : anio}
-              </span>
+        {/* ── Cumpleaños ── */}
+        {cumpleHoy.map(c => (
+          <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
+                  className="glass-card w-full flex items-center gap-3 text-left active:opacity-80"
+                  style={{ background: 'linear-gradient(180deg, rgba(201,162,74,0.16), rgba(201,162,74,0.07))', borderColor: 'rgba(201,162,74,0.35)' }}>
+            <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+                 style={{ background: 'rgba(201,162,74,0.18)', border: '1px solid rgba(201,162,74,0.40)' }}>
+              <Gift size={19} className="text-amber-300" />
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-amber-300 text-xs font-bold">Cumpleaños hoy · servicio gratis</p>
+              <p className="text-white font-bold truncate">{c.nombre} {c.apellido}</p>
+            </div>
+            <ChevronRight size={17} className="text-white/35" />
+          </button>
+        ))}
+        {cumpleProximos.length > 0 && (
+          <section className="glass-card">
+            <div className="flex items-center gap-2 mb-1">
+              <Gift size={15} className="text-amber-300" />
+              <h2 className="text-white text-[15px] font-bold">Cumpleaños esta semana</h2>
+            </div>
+            <ul>
+              {cumpleProximos.map((c, idx) => {
+                const [, mm, dd] = c.fecha_nacimiento.split('-')
+                return (
+                  <li key={c.id} style={idx ? linea : undefined}>
+                    <button onClick={() => navigate(`/clientes/${c.id}`)} className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-70">
+                      <span className="text-white text-sm flex-1 truncate">{c.nombre} {c.apellido}</span>
+                      <span className="text-amber-300 text-xs font-bold">{dd}/{mm}</span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        )}
+
+        {/* ── Indicadores ── */}
+        <section className="glass-card grid grid-cols-2" style={{ padding: 0 }} aria-label="Indicadores">
+          {[
+            { Icon: Users,        val: clientes.length,   label: 'Clientes' },
+            { Icon: Clock,        val: citasHoy.length,   label: 'Citas hoy' },
+            { Icon: UserPlus,     val: clientesNuevosMes, label: `Nuevos en ${MESES[mes].slice(0,3).toLowerCase()}` },
+            { Icon: CalendarDays, val: citasMesActual,    label: `Citas en ${MESES[mes].slice(0,3).toLowerCase()}`, pct: pctCitas },
+          ].map(({ Icon, val, label, pct }, idx) => (
+            <div key={label} className="px-4 py-4"
+                 style={{
+                   borderLeft: idx % 2 ? '1px solid var(--line)' : undefined,
+                   borderTop:  idx > 1 ? '1px solid var(--line)' : undefined,
+                 }}>
+              <div className="flex items-center gap-1.5 text-white/55">
+                <Icon size={13} />
+                <span className="text-[12px] font-semibold">{label}</span>
+              </div>
+              <div className="flex items-baseline gap-2 mt-1.5">
+                <p className="text-white text-[26px] font-extrabold leading-none">{val}</p>
+                {pct != null && (
+                  <span className="text-[11px] font-bold" style={{ color: pct >= 0 ? '#9fd3ae' : '#fca5a5' }}>
+                    {pct >= 0 ? '↑' : '↓'}{Math.abs(pct).toFixed(0)}%
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* ── Finanzas ── */}
+        <section className="glass-card" style={{ padding: 18 }}>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-white text-[15px] font-bold">{verMes ? MESES[mes] : `Año ${anio}`}</h2>
             <div className="flex items-center gap-3">
-              <div className="flex rounded-xl overflow-hidden" style={{border:'1px solid rgba(255,255,255,0.15)'}}>
+              <div className="flex rounded-[10px] p-0.5" role="tablist"
+                   style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line)' }}>
                 {[['mes', MESES[mes].slice(0,3)], ['anio', String(anio)]].map(([v, l]) => (
-                  <button key={v} onClick={() => setVistaIngresos(v)}
-                          className="px-3 py-1 text-xs font-semibold transition-all"
+                  <button key={v} role="tab" aria-selected={vistaIngresos === v} onClick={() => setVistaIngresos(v)}
+                          className="px-3 py-1 rounded-[8px] text-xs font-bold transition-colors duration-150"
                           style={{
-                            background: vistaIngresos === v ? 'rgba(255,255,255,0.22)' : 'transparent',
-                            color: vistaIngresos === v ? 'white' : 'rgba(255,255,255,0.38)',
+                            background: vistaIngresos === v ? 'rgba(201,162,74,0.20)' : 'transparent',
+                            color: vistaIngresos === v ? '#e2c98a' : 'rgba(247,242,232,0.55)',
                           }}>
                     {l}
                   </button>
                 ))}
               </div>
-              <button onClick={() => navigate('/ingresos')} className="text-white/40 text-xs">Ver todo →</button>
+              <button onClick={() => navigate('/ingresos')} className="text-amber-300 text-xs font-semibold">Ver todo</button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl p-4 text-center" style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.20)'}}>
-              <p className="text-xs text-emerald-300/70 font-semibold mb-1">USD</p>
-              <p className="text-xl font-bold text-emerald-300">
-                ${(vistaIngresos === 'mes' ? totalUSDmes : totalUSDanio).toFixed(2)}
-              </p>
-            </div>
-            <div className="rounded-2xl p-4 text-center" style={{background:'rgba(125,211,252,0.10)', border:'1px solid rgba(125,211,252,0.20)'}}>
-              <p className="text-xs text-sky-300/70 font-semibold mb-1">Bs.</p>
-              <p className="text-xl font-bold text-sky-300">
-                {(vistaIngresos === 'mes' ? totalBsmes : totalBsanio).toFixed(2)}
-              </p>
-            </div>
-          </div>
-        </div>
 
-        {/* Ingresos de hoy */}
-        <button onClick={() => navigate('/ingresos')}
-                className="glass-card w-full py-4 text-center active:bg-white/5 transition-colors"
-                style={{background:'rgba(52,211,153,0.12)', border:'1px solid rgba(52,211,153,0.28)'}}>
-          <p className="text-xs text-emerald-300/70 font-semibold mb-1">Ingresos de hoy</p>
-          <p className="text-3xl font-bold text-emerald-300">${totalHoyUsd.toFixed(2)}</p>
-          {ingresosHoy.length > 0 ? (
-            <p className="text-white/40 text-xs mt-1">
-              {ingresosHoy.length} {ingresosHoy.length === 1 ? 'cobro' : 'cobros'}
-              {hoyUsdDirecto > 0 && ` · $${hoyUsdDirecto.toFixed(2)} USD`}
-              {hoyBs > 0 && ` · Bs. ${hoyBs.toFixed(2)}`}
+          <p className="text-white/55 text-[12px] font-semibold mt-4">Total combinado</p>
+          <div className="flex items-baseline flex-wrap gap-x-2 mt-1">
+            <p className="text-amber-200 text-[32px] font-extrabold leading-none" style={{ letterSpacing: '-0.03em' }}>
+              ${(verMes ? totalMesUsd : totalAnioUsd).toFixed(2)}
             </p>
-          ) : (
-            <p className="text-white/30 text-xs mt-1">Sin cobros registrados hoy</p>
-          )}
-        </button>
-
-        {/* Total mes + Balance */}
-        <div className="space-y-2">
-          <div className="glass-card py-4 text-center" style={{background:'rgba(217,119,6,0.15)', border:'1px solid rgba(217,119,6,0.30)'}}>
-            <p className="text-xs text-amber-300/70 font-semibold mb-1">Total {MESES[mes]} en USD</p>
-            <p className="text-3xl font-bold text-amber-200">${totalMesUsd.toFixed(2)}</p>
-            {pctIngresos !== null && (
-              <p className="text-xs font-semibold mt-1" style={{color: pctIngresos >= 0 ? '#6ee7b7' : '#fca5a5'}}>
-                {pctIngresos >= 0 ? '↑' : '↓'} {Math.abs(pctIngresos).toFixed(1)}% vs {MESES[mesPasado]}
-              </p>
+            {verMes && pctIngresos !== null && (
+              <span className="text-xs font-bold" style={{ color: pctIngresos >= 0 ? '#9fd3ae' : '#fca5a5' }}>
+                {pctIngresos >= 0 ? '↑' : '↓'} {Math.abs(pctIngresos).toFixed(1)}% vs {MESES[mesPasado].slice(0,3).toLowerCase()}
+              </span>
             )}
-            <p className="text-white/30 text-xs mt-1">USD + Bs a tasa EUR del día de cada cobro</p>
           </div>
-          {egresosMes.length > 0 && (() => {
-            const balance = totalMesUsd - totalEgresosEnUsd
-            const positivo = balance >= 0
-            return (
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => navigate('/egresos')} className="glass-card text-center py-3 active:bg-white/5"
-                        style={{background:'rgba(239,68,68,0.10)', border:'1px solid rgba(239,68,68,0.20)'}}>
-                  <div className="flex items-center justify-center gap-1 mb-1">
-                    <ArrowDownCircle size={12} className="text-red-300/70" />
-                    <p className="text-xs text-red-300/70 font-semibold">Egresos {MESES[mes].slice(0,3)}</p>
-                  </div>
-                  <p className="text-lg font-bold text-red-300">${totalEgresosEnUsd.toFixed(2)}</p>
-                </button>
-                <div className="glass-card text-center py-3"
-                     style={{
-                       background: positivo ? 'rgba(52,211,153,0.10)' : 'rgba(239,68,68,0.10)',
-                       border: `1px solid ${positivo ? 'rgba(52,211,153,0.20)' : 'rgba(239,68,68,0.20)'}`
-                     }}>
-                  <p className="text-xs font-semibold mb-1" style={{color: positivo ? 'rgba(110,231,183,0.70)' : 'rgba(252,165,165,0.70)'}}>Balance neto</p>
-                  <p className="text-lg font-bold" style={{color: positivo ? '#6ee7b7' : '#fca5a5'}}>
-                    {positivo ? '+' : ''}${balance.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            )
-          })()}
-        </div>
+          <p className="text-white/45 text-[11px] mt-1.5">USD + Bs a la tasa EUR del día de cada cobro</p>
 
-        {/* Citas de hoy */}
-        <div className="glass-card space-y-3">
+          <dl className="mt-4 text-sm">
+            {[
+              ['Cobrado en USD', `$${(verMes ? totalUSDmes : totalUSDanio).toFixed(2)}`, 'text-emerald-300'],
+              ['Cobrado en Bs.', `Bs. ${(verMes ? totalBsmes : totalBsanio).toFixed(2)}`, 'text-sky-300'],
+              ...(verMes && egresosMes.length > 0 ? [
+                ['Egresos', `−$${totalEgresosEnUsd.toFixed(2)}`, 'text-red-300', '/egresos'],
+                ['Balance neto', `${balance >= 0 ? '+' : '−'}$${Math.abs(balance).toFixed(2)}`, balance >= 0 ? 'text-emerald-300' : 'text-red-300'],
+              ] : []),
+            ].map(([label, valor, color, ruta]) => (
+              <div key={label} className="flex items-center justify-between py-2.5" style={linea}>
+                <dt className="text-white/65">
+                  {ruta
+                    ? <button onClick={() => navigate(ruta)} className="underline decoration-white/25 underline-offset-4">{label}</button>
+                    : label}
+                </dt>
+                <dd className={`${color} font-bold`}>{valor}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        {/* ── Citas de hoy ── */}
+        <section className="glass-card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-white font-semibold text-sm">Citas de hoy</span>
+              <h2 className="text-white text-[15px] font-bold">Citas de hoy</h2>
               {citasSinHora.length > 0 && (
-                <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-xl"
-                      style={{background:'rgba(251,146,60,0.22)', color:'#fdba74'}}>
-                  <AlertTriangle size={10} />
-                  {citasSinHora.length} sin hora
+                <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(251,146,60,0.16)', color: '#fdba74' }}>
+                  <AlertTriangle size={10} /> {citasSinHora.length} sin hora
                 </span>
               )}
             </div>
-            <button onClick={abrirCitaRapida} className="glass-btn-icon" style={{padding:'6px'}}>
-              <Plus size={15} className="text-white" />
+            <button onClick={abrirCitaRapida} aria-label="Agendar cita"
+                    className="glass-btn-icon w-10 h-10 flex items-center justify-center" style={{ padding: 0 }}>
+              <Plus size={17} className="text-amber-300" />
             </button>
           </div>
           {citasHoy.length === 0 ? (
-            <p className="text-white/35 text-sm text-center py-2">Sin citas programadas</p>
+            <p className="text-white/50 text-sm pt-2 pb-1">No hay citas para hoy. Toca + para agendar una.</p>
           ) : (
-            <div className="space-y-2">
-              {citasHoy.map(c => (
-                <button key={c.id} onClick={() => navigate(`/clientes/${c.cliente_id}`)}
-                        className="w-full flex items-center gap-3 rounded-2xl px-3 py-3 active:bg-white/10 text-left"
-                        style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.10)'}}>
-                  <div className="w-1 h-10 rounded-full flex-shrink-0" style={{background:'rgba(217,119,6,0.70)'}} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-semibold truncate">{c.cliente_nombre}</p>
-                    <p className="text-white/50 text-xs truncate">{c.motivo}</p>
-                  </div>
-                  <span className="text-amber-300 text-xs font-semibold flex-shrink-0">{formatHora(c.hora)}</span>
-                </button>
+            <ul className="mt-2">
+              {citasHoy.map((c, idx) => (
+                <li key={c.id} style={idx ? linea : undefined}>
+                  <button onClick={() => navigate(`/clientes/${c.cliente_id}`)} className="w-full flex items-center gap-3 py-3 text-left active:opacity-70">
+                    <span className="w-[68px] flex-shrink-0 text-amber-300 text-[13px] font-bold">{c.hora ? formatHora(c.hora) : '—'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-semibold truncate">{c.cliente_nombre}</p>
+                      <p className="text-white/50 text-xs truncate">{c.motivo}</p>
+                    </div>
+                    <ChevronRight size={15} className="text-white/30" />
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </div>
+        </section>
 
-        {/* Próximas citas 7 días */}
+        {/* ── Próximos 7 días ── */}
         {citasProximas7.length > 0 && (
-          <div className="glass-card space-y-3">
+          <section className="glass-card">
             <div className="flex items-center justify-between">
-              <span className="text-white font-semibold text-sm">Próximos 7 días</span>
-              <button onClick={() => navigate('/citas')} className="text-white/40 text-xs">Ver citas →</button>
+              <h2 className="text-white text-[15px] font-bold">Próximos 7 días</h2>
+              <button onClick={() => navigate('/citas')} className="text-amber-300 text-xs font-semibold">Ver citas</button>
             </div>
-            <div className="space-y-2">
-              {citasProximas7.map(c => (
-                <button key={c.id} onClick={() => navigate(`/clientes/${c.cliente_id}`)}
-                        className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 active:bg-white/10 text-left"
-                        style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.10)'}}>
-                  <div className="rounded-2xl px-2.5 py-1.5 text-center flex-shrink-0"
-                       style={{background:'rgba(217,119,6,0.15)', border:'1px solid rgba(217,119,6,0.25)', minWidth:'40px'}}>
-                    <p className="text-[9px] text-amber-300 font-bold leading-none uppercase">
-                      {['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][new Date(c.fecha+'T12:00').getMonth()]}
-                    </p>
-                    <p className="text-base font-bold text-amber-200 leading-tight">
-                      {new Date(c.fecha+'T12:00').getDate()}
-                    </p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-semibold truncate">{c.cliente_nombre}</p>
-                    <p className="text-white/45 text-xs truncate">{c.motivo}</p>
-                  </div>
-                  {c.hora && <span className="text-amber-300 text-xs font-semibold flex-shrink-0">{formatHora(c.hora)}</span>}
-                </button>
-              ))}
-            </div>
-          </div>
+            <ul className="mt-2">
+              {citasProximas7.map((c, idx) => {
+                const d = new Date(c.fecha + 'T12:00')
+                return (
+                  <li key={c.id} style={idx ? linea : undefined}>
+                    <button onClick={() => navigate(`/clientes/${c.cliente_id}`)} className="w-full flex items-center gap-3 py-3 text-left active:opacity-70">
+                      <div className="w-11 flex-shrink-0 text-center rounded-[10px] py-1"
+                           style={{ background: 'rgba(201,162,74,0.10)', border: '1px solid rgba(201,162,74,0.22)' }}>
+                        <p className="text-[9px] text-amber-300 font-bold leading-none uppercase tracking-wide">
+                          {d.toLocaleDateString('es-VE', { weekday: 'short' }).replace('.', '')}
+                        </p>
+                        <p className="text-[17px] font-extrabold text-amber-200 leading-tight">{d.getDate()}</p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">{c.cliente_nombre}</p>
+                        <p className="text-white/50 text-xs truncate">{c.motivo}</p>
+                      </div>
+                      {c.hora && <span className="text-white/70 text-xs font-semibold flex-shrink-0">{formatHora(c.hora)}</span>}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
         )}
 
-        {/* Últimos clientes */}
+        {/* ── Clientes recientes ── */}
         {ultimosClientes.length > 0 && (
-          <div className="glass-card space-y-2">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-white font-semibold text-sm">Clientes recientes</span>
-              <button onClick={() => navigate('/clientes')} className="text-white/40 text-xs">Ver todos →</button>
+          <section className="glass-card">
+            <div className="flex items-center justify-between">
+              <h2 className="text-white text-[15px] font-bold">Clientes recientes</h2>
+              <button onClick={() => navigate('/clientes')} className="text-amber-300 text-xs font-semibold">Ver todos</button>
             </div>
-            {ultimosClientes.map(c => (
-              <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
-                      className="w-full flex items-center gap-3 rounded-2xl px-3 py-3 active:bg-white/10 transition-colors"
-                      style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)'}}>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                     style={{background:'rgba(217,119,6,0.20)'}}>
-                  <span className="text-amber-300 text-xs font-bold">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-white text-sm font-semibold">{c.nombre} {c.apellido}</p>
-                  <p className="text-white/45 text-xs">{c.telefono || ''}</p>
-                </div>
-                <ChevronRight size={15} className="text-white/25" />
-              </button>
-            ))}
-          </div>
+            <ul className="mt-2">
+              {ultimosClientes.map((c, idx) => (
+                <li key={c.id} style={idx ? linea : undefined}>
+                  <button onClick={() => navigate(`/clientes/${c.id}`)} className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-70">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                         style={{ background: 'rgba(201,162,74,0.12)', border: '1px solid rgba(201,162,74,0.28)' }}>
+                      <span className="text-amber-300 text-xs font-bold">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-semibold truncate">{c.nombre} {c.apellido}</p>
+                      {c.telefono && <p className="text-white/50 text-xs">{c.telefono}</p>}
+                    </div>
+                    <ChevronRight size={15} className="text-white/30" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
-        {/* Últimos ingresos */}
+        {/* ── Últimos ingresos ── */}
         {ultimosPagos.length > 0 && (
-          <div className="glass-card space-y-2">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-white font-semibold text-sm">Últimos ingresos</span>
-              <button onClick={() => navigate('/ingresos')} className="text-white/40 text-xs">Ver todos →</button>
+          <section className="glass-card">
+            <div className="flex items-center justify-between">
+              <h2 className="text-white text-[15px] font-bold">Últimos ingresos</h2>
+              <button onClick={() => navigate('/ingresos')} className="text-amber-300 text-xs font-semibold">Ver todos</button>
             </div>
-            {ultimosPagos.map(i => (
-              <div key={i.id} className="flex items-center gap-3 rounded-2xl px-3 py-3"
-                   style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)'}}>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                     style={{background:'rgba(52,211,153,0.15)'}}>
-                  <DollarSign size={16} className="text-emerald-300" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-semibold truncate">{i.cliente_nombre}</p>
-                  <p className="text-white/45 text-xs truncate">{i.concepto}</p>
-                </div>
-                <span className="text-emerald-300 text-sm font-bold flex-shrink-0">
-                  {i.moneda === 'USD' ? '$' : 'Bs.'}{Number(i.monto).toFixed(2)}
-                </span>
-              </div>
-            ))}
-          </div>
+            <ul className="mt-2">
+              {ultimosPagos.map((i, idx) => (
+                <li key={i.id} className="flex items-center gap-3 py-2.5" style={idx ? linea : undefined}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-semibold truncate">{i.cliente_nombre}</p>
+                    <p className="text-white/50 text-xs truncate">{i.concepto}</p>
+                  </div>
+                  <span className={`${i.moneda === 'USD' ? 'text-emerald-300' : 'text-sky-300'} text-sm font-bold flex-shrink-0`}>
+                    {i.moneda === 'USD' ? '$' : 'Bs. '}{Number(i.monto).toFixed(2)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
       </div>
 
       {/* ── Bottom sheet: Cita rápida ── */}
       {citaRapida && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{background:'rgba(0,0,0,0.60)'}}>
-          <div className="rounded-t-3xl px-4 pt-5 pb-8 space-y-4"
-               style={{background:'rgba(20,10,0,0.97)', border:'1px solid rgba(255,255,255,0.12)', borderBottom:'none', backdropFilter:'blur(24px)'}}>
+        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{background:'rgba(0,0,0,0.65)'}}
+             onClick={e => { if (e.target === e.currentTarget) setCitaRapida(false) }}>
+          <div className="rounded-t-[26px] px-4 pt-3 space-y-4 max-w-md w-full mx-auto"
+               style={{background:'var(--surface)', border:'1px solid var(--line-strong)', borderBottom:'none', paddingBottom:'calc(2rem + env(safe-area-inset-bottom))'}}>
+            <div className="mx-auto h-1 w-10 rounded-full" style={{background:'rgba(247,242,232,0.18)'}} aria-hidden="true" />
 
             <div className="flex items-center justify-between">
               <h3 className="text-white font-bold text-base">Cita rápida</h3>
@@ -580,7 +563,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between rounded-2xl px-3 py-3"
                    style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)'}}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(217,119,6,0.20)'}}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background:'rgba(201,162,74,0.20)'}}>
                     <span className="text-amber-300 font-bold text-xs">
                       {qForm.cliente_nombre.split(' ').filter(n => n).map(n => n[0]).slice(0,2).join('')}
                     </span>
@@ -609,7 +592,7 @@ export default function Dashboard() {
                               onClick={() => { setQForm(f => ({...f, cliente_id: c.id, cliente_nombre: `${c.nombre} ${c.apellido}`})); setQMostrarBuscador(false); setQBusqueda(''); setQError('') }}
                               className="w-full flex items-center gap-3 rounded-2xl px-3 py-2 active:bg-white/10 text-left"
                               style={{background:'rgba(255,255,255,0.06)'}}>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(217,119,6,0.20)'}}>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(201,162,74,0.20)'}}>
                           <span className="text-amber-300 font-bold text-xs">{(c.nombre||' ')[0].toUpperCase()}{(c.apellido||' ')[0].toUpperCase()}</span>
                         </div>
                         <span className="text-white text-sm">{c.nombre} {c.apellido}</span>
@@ -650,8 +633,8 @@ export default function Dashboard() {
                             })}
                             className="px-3 py-1.5 rounded-2xl text-xs font-semibold transition-all"
                             style={{
-                              background: activo ? 'rgba(217,119,6,0.45)' : 'rgba(255,255,255,0.08)',
-                              border: `1px solid ${activo ? 'rgba(217,119,6,0.70)' : 'rgba(255,255,255,0.15)'}`,
+                              background: activo ? 'rgba(201,162,74,0.45)' : 'rgba(255,255,255,0.08)',
+                              border: `1px solid ${activo ? 'rgba(201,162,74,0.70)' : 'rgba(255,255,255,0.15)'}`,
                               color: activo ? 'white' : 'rgba(255,255,255,0.50)',
                             }}>
                       {m}

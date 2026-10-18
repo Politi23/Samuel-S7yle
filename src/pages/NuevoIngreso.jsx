@@ -206,7 +206,7 @@ export default function NuevoIngreso() {
             <div className="flex items-center justify-between rounded-2xl px-3 py-3"
                  style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)'}}>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:'rgba(217,119,6,0.20)'}}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:'rgba(201,162,74,0.20)'}}>
                   <span className="text-amber-300 font-bold text-xs">{(form.cliente_nombre||'').split(' ').filter(n=>n).map(n=>n[0].toUpperCase()).slice(0,2).join('')}</span>
                 </div>
                 <span className="text-white text-sm font-semibold">{form.cliente_nombre}</span>
@@ -225,7 +225,7 @@ export default function NuevoIngreso() {
                 <div className="space-y-1 max-h-52 overflow-y-auto">
                   {filtrados.map(c => (
                     <button key={c.id} onClick={() => seleccionar(c)} className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 active:bg-white/10 text-left" style={{background:'rgba(255,255,255,0.06)'}}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(217,119,6,0.20)'}}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(201,162,74,0.20)'}}>
                         <span className="text-amber-300 font-bold text-xs">{c.nombre[0].toUpperCase()}{c.apellido[0].toUpperCase()}</span>
                       </div>
                       <div>
@@ -257,8 +257,8 @@ export default function NuevoIngreso() {
                   <button key={s} type="button" onClick={() => toggleServicio(s)}
                           className="px-3 py-1.5 rounded-2xl text-xs font-semibold transition-all"
                           style={{
-                            background: activo ? 'rgba(217,119,6,0.45)' : 'rgba(255,255,255,0.08)',
-                            border: `1px solid ${activo ? 'rgba(217,119,6,0.70)' : 'rgba(255,255,255,0.15)'}`,
+                            background: activo ? 'rgba(201,162,74,0.45)' : 'rgba(255,255,255,0.08)',
+                            border: `1px solid ${activo ? 'rgba(201,162,74,0.70)' : 'rgba(255,255,255,0.15)'}`,
                             color: activo ? 'white' : 'rgba(255,255,255,0.50)',
                           }}>
                     {s}
@@ -308,13 +308,13 @@ export default function NuevoIngreso() {
 
             {mostrarConvBs && (
               <div className="mt-2 rounded-2xl px-3 py-2.5 space-y-2"
-                   style={{background:'rgba(217,119,6,0.15)', border:'1px solid rgba(217,119,6,0.30)'}}>
+                   style={{background:'rgba(201,162,74,0.15)', border:'1px solid rgba(201,162,74,0.30)'}}>
                 <div className="flex items-center justify-between">
                   <span className="text-amber-300/70 text-xs">Equivalente en Bs</span>
                   <button type="button"
                           onClick={() => { setBsPersonalizado(v => !v); setMontoBsCustom(montoBsAuto || '') }}
                           className="text-xs font-semibold"
-                          style={{color: bsPersonalizado ? 'rgba(251,191,36,1)' : 'rgba(255,255,255,0.40)'}}>
+                          style={{color: bsPersonalizado ? 'rgba(226,201,138,1)' : 'rgba(255,255,255,0.40)'}}>
                     {bsPersonalizado ? 'Usar BCV' : 'Personalizar'}
                   </button>
                 </div>
@@ -339,7 +339,7 @@ export default function NuevoIngreso() {
 
             {esBs && monto1 > 0 && !pago2Activo && (
               <div className="mt-2 rounded-2xl px-3 py-2.5 flex items-center justify-between"
-                   style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.20)'}}>
+                   style={{background:'rgba(124,192,147,0.10)', border:'1px solid rgba(124,192,147,0.20)'}}>
                 <span className="text-emerald-300/70 text-xs">Equivalente EUR</span>
                 <div className="text-right">
                   {tasaEur ? (
@@ -395,13 +395,13 @@ export default function NuevoIngreso() {
 
                 {mostrarConvBs2 && (
                   <div className="mt-2 rounded-2xl px-3 py-2.5 space-y-2"
-                       style={{background:'rgba(217,119,6,0.15)', border:'1px solid rgba(217,119,6,0.30)'}}>
+                       style={{background:'rgba(201,162,74,0.15)', border:'1px solid rgba(201,162,74,0.30)'}}>
                     <div className="flex items-center justify-between">
                       <span className="text-amber-300/70 text-xs">Equivalente en Bs</span>
                       <button type="button"
                               onClick={() => { setBs2Personalizado(v => !v); setMontoBs2Custom(montoBs2Auto || '') }}
                               className="text-xs font-semibold"
-                              style={{color: bs2Personalizado ? 'rgba(251,191,36,1)' : 'rgba(255,255,255,0.40)'}}>
+                              style={{color: bs2Personalizado ? 'rgba(226,201,138,1)' : 'rgba(255,255,255,0.40)'}}>
                         {bs2Personalizado ? 'Usar BCV' : 'Personalizar'}
                       </button>
                     </div>
@@ -427,7 +427,7 @@ export default function NuevoIngreso() {
 
               {monto1 > 0 && monto2 > 0 && (
                 <div className="rounded-2xl px-3 py-2.5 flex items-center justify-between"
-                     style={{background:'rgba(217,119,6,0.20)', border:'1px solid rgba(217,119,6,0.35)'}}>
+                     style={{background:'rgba(201,162,74,0.20)', border:'1px solid rgba(201,162,74,0.35)'}}>
                   <span className="text-amber-300/80 text-xs font-semibold">Total</span>
                   <span className="text-white font-bold text-sm">${totalUSD} USD</span>
                 </div>

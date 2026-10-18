@@ -13,7 +13,7 @@ export default function Logo({ size = 160, glow = true, alt = 'Samuel S7yle Barb
         width: size,
         height: size,
         margin: `-${recorte}px auto`,
-        filter: glow ? 'drop-shadow(0 0 24px rgba(251,191,36,0.28))' : undefined,
+        filter: glow ? 'drop-shadow(0 0 24px rgba(226,201,138,0.28))' : undefined,
         ...style,
       }}
     />

@@ -89,8 +89,8 @@ function SlotRow({ slot, onChange, onDelete }) {
         style={{
           minHeight: 44, padding: '0 12px', borderRadius: 9, border: 'none', cursor: 'pointer',
           fontSize: 12, fontWeight: 700, flexShrink: 0, lineHeight: 1,
-          background: slot.ocupado ? 'rgba(248,113,113,0.15)' : 'rgba(52,211,153,0.12)',
-          color: slot.ocupado ? '#f87171' : '#34d399',
+          background: slot.ocupado ? 'rgba(248,113,113,0.15)' : 'rgba(124,192,147,0.12)',
+          color: slot.ocupado ? '#f87171' : '#7cc093',
           whiteSpace: 'nowrap',
         }}>
         {slot.ocupado ? 'Ocupado' : 'Libre'}
@@ -148,9 +148,9 @@ function SlotsList({ dia, idx, addSlot, updateSlot, deleteSlot }) {
 function PendienteBadge() {
   return (
     <span style={{
-      color: '#fbbf24', fontSize: 10, fontWeight: 700, lineHeight: 1,
+      color: '#d6b468', fontSize: 10, fontWeight: 700, lineHeight: 1,
       padding: '3px 6px', borderRadius: 6,
-      background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)',
+      background: 'rgba(226,201,138,0.12)', border: '1px solid rgba(226,201,138,0.25)',
       whiteSpace: 'nowrap',
     }}>
       Sin guardar
@@ -369,8 +369,8 @@ export default function HorarioAdmin() {
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '13px 20px', borderRadius: 16, border: 'none', cursor: 'pointer', width: '100%',
-            background: copiado ? 'rgba(52,211,153,0.18)' : 'rgba(217,119,6,0.18)',
-            color: copiado ? '#34d399' : '#fbbf24',
+            background: copiado ? 'rgba(124,192,147,0.18)' : 'rgba(201,162,74,0.18)',
+            color: copiado ? '#7cc093' : '#d6b468',
             fontSize: 14, fontWeight: 600, transition: 'all 0.18s',
           }}>
           {copiado ? <CheckCircle2 size={17} /> : <Copy size={17} />}
@@ -382,27 +382,27 @@ export default function HorarioAdmin() {
           <div className="glass-card" style={{ height: 240 }} />
         ) : diaHoy ? (
           <div className="glass-card" style={{
-            border: '1px solid rgba(217,119,6,0.38)',
-            background: 'rgba(217,119,6,0.07)',
+            border: '1px solid rgba(201,162,74,0.38)',
+            background: 'rgba(201,162,74,0.07)',
             display: 'flex', flexDirection: 'column', gap: 16,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{
                   width: 7, height: 7, borderRadius: '50%',
-                  background: '#fbbf24', boxShadow: '0 0 8px rgba(251,191,36,0.8)',
+                  background: '#d6b468', boxShadow: '0 0 8px rgba(226,201,138,0.8)',
                   display: 'inline-block', flexShrink: 0,
                 }} />
-                <span style={{ color: '#fde68a', fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>
+                <span style={{ color: '#ecdcae', fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>
                   {diaHoy.dia}
                 </span>
-                <span style={{ color: 'rgba(251,191,36,0.50)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <span style={{ color: 'rgba(226,201,138,0.50)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   hoy
                 </span>
                 {sinGuardar(diaHoy) && <PendienteBadge />}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontSize: 12, color: diaHoy.abierto ? '#fbbf24' : 'rgba(255,255,255,0.30)', fontWeight: 600 }}>
+                <span style={{ fontSize: 12, color: diaHoy.abierto ? '#d6b468' : 'rgba(255,255,255,0.30)', fontWeight: 600 }}>
                   {diaHoy.abierto ? 'Abierto' : 'Cerrado'}
                 </span>
                 <button
@@ -410,7 +410,7 @@ export default function HorarioAdmin() {
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}
                   aria-label={diaHoy.abierto ? 'Marcar como cerrado' : 'Marcar como abierto'}>
                   {diaHoy.abierto
-                    ? <ToggleRight size={34} color="#fbbf24" />
+                    ? <ToggleRight size={34} color="#d6b468" />
                     : <ToggleLeft  size={34} color="rgba(255,255,255,0.25)" />}
                 </button>
               </div>
@@ -474,7 +474,7 @@ export default function HorarioAdmin() {
                       style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0 }}
                       aria-label={dia.abierto ? 'Cerrar' : 'Abrir'}>
                       {dia.abierto
-                        ? <ToggleRight size={24} color="#fbbf24" />
+                        ? <ToggleRight size={24} color="#d6b468" />
                         : <ToggleLeft  size={24} color="rgba(255,255,255,0.22)" />}
                     </button>
 

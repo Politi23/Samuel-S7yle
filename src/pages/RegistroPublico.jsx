@@ -117,9 +117,9 @@ export default function RegistroPublico() {
               <div style={{
                 width: 56, height: 56, borderRadius: 16,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(52,211,153,0.14)', border: '1px solid rgba(52,211,153,0.30)',
+                background: 'rgba(124,192,147,0.14)', border: '1px solid rgba(124,192,147,0.30)',
               }}>
-                <CheckCircle2 size={28} color="#34d399" />
+                <CheckCircle2 size={28} color="#7cc093" />
               </div>
               <div>
                 <p style={{ margin: 0, color: '#fff', fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em' }}>
@@ -141,7 +141,7 @@ export default function RegistroPublico() {
                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                      padding: '13px 20px', borderRadius: 16, textDecoration: 'none',
                      background: 'rgba(37,211,102,0.10)', border: '1px solid rgba(37,211,102,0.30)',
-                     color: '#6ee7b7', fontSize: 14, fontWeight: 600,
+                     color: '#9fd3ae', fontSize: 14, fontWeight: 600,
                    }}>
                   Escribirle a Samuel por WhatsApp
                 </a>

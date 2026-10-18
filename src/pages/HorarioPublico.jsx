@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Scissors, Clock, CheckCircle2, XCircle, AlertCircle, WifiOff } from 'lucide-react'
+import Logo from '../components/Logo'
+import { Clock, CheckCircle2, XCircle, AlertCircle, WifiOff } from 'lucide-react'
 
 function tiempoDesde(ts) {
   if (!ts) return null
@@ -104,24 +105,12 @@ export default function HorarioPublico() {
         <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           {/* Marca */}
-          <header style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 18,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(217,119,6,0.20)',
-              border: '1px solid rgba(217,119,6,0.42)',
-              boxShadow: '0 0 32px rgba(217,119,6,0.18), inset 0 1px 0 rgba(255,255,255,0.28)',
-            }}>
-              <Scissors size={26} color="#fbbf24" strokeWidth={1.8} />
-            </div>
+          <header style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            {/* El escudo ya dice "Samuel S7yle" */}
+            <h1 style={{ margin: 0, lineHeight: 0 }}>
+              <Logo size={200} />
+            </h1>
             <div>
-              <h1 style={{
-                margin: 0, color: '#fff',
-                fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1,
-                textWrap: 'balance',
-              }}>
-                Samuel S7yle
-              </h1>
               <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.52)', fontSize: 13 }}>
                 Puerto Cabello, Venezuela
               </p>
@@ -177,16 +166,16 @@ export default function HorarioPublico() {
                   } else if (libres.length === 0) {
                     badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: 'Sin cupos' }
                   } else if (libres.length <= 2) {
-                    badge = { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.20)',  Icon: AlertCircle,  label: `${libres.length} libre${libres.length !== 1 ? 's' : ''}` }
+                    badge = { color: '#d6b468', bg: 'rgba(226,201,138,0.12)',  border: 'rgba(226,201,138,0.20)',  Icon: AlertCircle,  label: `${libres.length} libre${libres.length !== 1 ? 's' : ''}` }
                   } else {
-                    badge = { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.20)',  Icon: CheckCircle2, label: `${libres.length} libres` }
+                    badge = { color: '#7cc093', bg: 'rgba(124,192,147,0.12)',  border: 'rgba(124,192,147,0.20)',  Icon: CheckCircle2, label: `${libres.length} libres` }
                   }
 
                   return (
                     <div key={dia.id} style={{
                       padding: esHoy ? '15px 18px 16px' : '12px 18px',
                       borderBottom: i < dias.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                      background: esHoy ? 'rgba(217,119,6,0.09)' : 'transparent',
+                      background: esHoy ? 'rgba(201,162,74,0.09)' : 'transparent',
                       opacity: !dia.abierto ? 0.55 : 1,
                     }}>
                       {/* Nombre + badge */}
@@ -195,20 +184,20 @@ export default function HorarioPublico() {
                           {esHoy && (
                             <span style={{
                               width: 6, height: 6, borderRadius: '50%',
-                              background: '#fbbf24',
-                              boxShadow: '0 0 6px rgba(251,191,36,0.8)',
+                              background: '#d6b468',
+                              boxShadow: '0 0 6px rgba(226,201,138,0.8)',
                               flexShrink: 0, display: 'inline-block',
                             }} />
                           )}
                           <span style={{
-                            color: esHoy ? '#fde68a' : dia.abierto ? '#fff' : 'rgba(255,255,255,0.50)',
+                            color: esHoy ? '#ecdcae' : dia.abierto ? '#fff' : 'rgba(255,255,255,0.50)',
                             fontSize: esHoy ? 15 : 14,
                             fontWeight: esHoy ? 700 : 500,
                           }}>
                             {dia.dia}
                           </span>
                           {esHoy && (
-                            <span style={{ color: 'rgba(251,191,36,0.50)', fontSize: 11, fontWeight: 600 }}>
+                            <span style={{ color: 'rgba(226,201,138,0.50)', fontSize: 11, fontWeight: 600 }}>
                               · hoy
                             </span>
                           )}
@@ -267,7 +256,7 @@ export default function HorarioPublico() {
                                   {fmt(slot.inicio)} — {fmt(slot.fin)}
                                 </span>
                               </div>
-                              <span style={{ color: 'rgba(52,211,153,0.75)', fontSize: 12, fontWeight: 700 }}>
+                              <span style={{ color: 'rgba(124,192,147,0.75)', fontSize: 12, fontWeight: 700 }}>
                                 Reservar →
                               </span>
                             </a>

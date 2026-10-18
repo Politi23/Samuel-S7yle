@@ -35,11 +35,11 @@ export default function PasswordGate({ children }) {
           <div style={{
             width: 60, height: 60, borderRadius: 17,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(217,119,6,0.20)',
-            border: '1px solid rgba(217,119,6,0.42)',
-            boxShadow: '0 0 28px rgba(217,119,6,0.16), inset 0 1px 0 rgba(255,255,255,0.28)',
+            background: 'rgba(201,162,74,0.20)',
+            border: '1px solid rgba(201,162,74,0.42)',
+            boxShadow: '0 0 28px rgba(201,162,74,0.16), inset 0 1px 0 rgba(255,255,255,0.28)',
           }}>
-            <Lock size={22} color="#fbbf24" strokeWidth={2} />
+            <Lock size={22} color="#d6b468" strokeWidth={2} />
           </div>
           <div>
             <h1 style={{ margin: 0, color: '#fff', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>

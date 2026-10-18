@@ -105,10 +105,10 @@ export default function Estadisticas() {
         {/* KPIs del mes */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { icon: Users,        val: clientes.length,              label: 'Total clientes',    color: 'rgba(217,119,6,0.20)',   border: 'rgba(217,119,6,0.35)',  textColor: '#fcd34d' },
-            { icon: CalendarDays, val: citasFuturas,                  label: 'Citas futuras',     color: 'rgba(125,211,252,0.15)', border: 'rgba(125,211,252,0.30)', textColor: '#7dd3fc' },
-            { icon: DollarSign,   val: `$${totalMesUsd.toFixed(0)}`,  label: 'Ingresos este mes', color: 'rgba(52,211,153,0.15)',  border: 'rgba(52,211,153,0.30)', textColor: '#6ee7b7' },
-            { icon: Award,        val: `$${promPorCita.toFixed(0)}`,  label: 'Promedio por cita', color: 'rgba(251,191,36,0.15)',  border: 'rgba(251,191,36,0.30)', textColor: '#fde68a' },
+            { icon: Users,        val: clientes.length,              label: 'Total clientes',    color: 'rgba(201,162,74,0.20)',   border: 'rgba(201,162,74,0.35)',  textColor: '#e2c98a' },
+            { icon: CalendarDays, val: citasFuturas,                  label: 'Citas futuras',     color: 'rgba(134,174,198,0.15)', border: 'rgba(134,174,198,0.30)', textColor: '#a9c7da' },
+            { icon: DollarSign,   val: `$${totalMesUsd.toFixed(0)}`,  label: 'Ingresos este mes', color: 'rgba(124,192,147,0.15)',  border: 'rgba(124,192,147,0.30)', textColor: '#9fd3ae' },
+            { icon: Award,        val: `$${promPorCita.toFixed(0)}`,  label: 'Promedio por cita', color: 'rgba(226,201,138,0.15)',  border: 'rgba(226,201,138,0.30)', textColor: '#ecdcae' },
           ].map(({ icon: Icon, val, label, color, border, textColor }) => (
             <div key={label} className="glass-card flex flex-col items-center gap-1 py-4 text-center"
                  style={{background: color, border: `1px solid ${border}`}}>
@@ -134,8 +134,8 @@ export default function Estadisticas() {
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-white/25 text-xs w-4 text-right flex-shrink-0">#{i+1}</span>
                       <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                           style={{background: i === 0 ? 'rgba(217,119,6,0.30)' : 'rgba(255,255,255,0.10)'}}>
-                        <span className="text-xs font-bold" style={{color: i === 0 ? '#fcd34d' : 'rgba(255,255,255,0.60)'}}>
+                           style={{background: i === 0 ? 'rgba(201,162,74,0.30)' : 'rgba(255,255,255,0.10)'}}>
+                        <span className="text-xs font-bold" style={{color: i === 0 ? '#e2c98a' : 'rgba(255,255,255,0.60)'}}>
                           {(nombre.split(' ')[0]||' ')[0].toUpperCase()}{(nombre.split(' ')[1]||' ')[0].toUpperCase()}
                         </span>
                       </div>
@@ -151,7 +151,7 @@ export default function Estadisticas() {
                          style={{
                            width:`${(visitas/maxVisitas)*100}%`,
                            background: i === 0
-                             ? 'linear-gradient(90deg, rgba(217,119,6,0.9), rgba(217,119,6,0.4))'
+                             ? 'linear-gradient(90deg, rgba(201,162,74,0.9), rgba(201,162,74,0.4))'
                              : 'linear-gradient(90deg, rgba(255,255,255,0.30), rgba(255,255,255,0.12))'
                          }} />
                   </div>
@@ -181,10 +181,10 @@ export default function Estadisticas() {
                          height: `${Math.max(pct, total > 0 ? 4 : 0)}%`,
                          minHeight: total > 0 ? '4px' : '0',
                          background: esMesActual
-                           ? 'linear-gradient(180deg, rgba(217,119,6,0.9), rgba(180,83,9,0.6))'
+                           ? 'linear-gradient(180deg, rgba(201,162,74,0.9), rgba(168,132,36,0.6))'
                            : 'linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.10))',
                        }} />
-                  <span className="text-[9px] font-semibold" style={{color: esMesActual ? '#fcd34d' : 'rgba(255,255,255,0.35)'}}>{label}</span>
+                  <span className="text-[9px] font-semibold" style={{color: esMesActual ? '#e2c98a' : 'rgba(255,255,255,0.35)'}}>{label}</span>
                 </div>
               )
             })}
@@ -209,10 +209,10 @@ export default function Estadisticas() {
                          height: `${Math.max(pct, n > 0 ? 5 : 0)}%`,
                          minHeight: n > 0 ? '4px' : '0',
                          background: esMesActual
-                           ? 'linear-gradient(180deg, rgba(125,211,252,0.9), rgba(56,189,248,0.5))'
+                           ? 'linear-gradient(180deg, rgba(134,174,198,0.9), rgba(56,189,248,0.5))'
                            : 'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))',
                        }} />
-                  <span className="text-[9px] font-semibold" style={{color: esMesActual ? '#7dd3fc' : 'rgba(255,255,255,0.35)'}}>{label}</span>
+                  <span className="text-[9px] font-semibold" style={{color: esMesActual ? '#a9c7da' : 'rgba(255,255,255,0.35)'}}>{label}</span>
                 </div>
               )
             })}
@@ -244,7 +244,7 @@ export default function Estadisticas() {
                          style={{
                            width:`${(count/maxServ)*100}%`,
                            background: i === 0
-                             ? 'linear-gradient(90deg, rgba(217,119,6,0.8), rgba(217,119,6,0.4))'
+                             ? 'linear-gradient(90deg, rgba(201,162,74,0.8), rgba(201,162,74,0.4))'
                              : 'linear-gradient(90deg, rgba(255,255,255,0.30), rgba(255,255,255,0.12))'
                          }} />
                   </div>
@@ -269,7 +269,7 @@ export default function Estadisticas() {
                          style={{
                            width: `${pct}%`,
                            background: pct === 100
-                             ? 'linear-gradient(90deg, rgba(217,119,6,0.9), rgba(180,83,9,0.5))'
+                             ? 'linear-gradient(90deg, rgba(201,162,74,0.9), rgba(168,132,36,0.5))'
                              : 'linear-gradient(90deg, rgba(255,255,255,0.30), rgba(255,255,255,0.12))'
                          }} />
                   </div>
@@ -292,7 +292,7 @@ export default function Estadisticas() {
                     <div className="h-full rounded-full"
                          style={{
                            width:`${(n/maxHora)*100}%`,
-                           background:'linear-gradient(90deg, rgba(125,211,252,0.8), rgba(56,189,248,0.4))'
+                           background:'linear-gradient(90deg, rgba(134,174,198,0.8), rgba(56,189,248,0.4))'
                          }} />
                   </div>
                   <span className="text-white/35 text-xs w-5 text-right flex-shrink-0">{n}</span>

@@ -49,21 +49,21 @@ export async function dibujarEstado(canvas, url) {
     ctx.fillStyle = g
     ctx.fillRect(0, 0, W, H)
   }
-  brillo(180, 260, 720, 'rgba(217,119,6,0.42)')
-  brillo(960, 1700, 820, 'rgba(180,83,9,0.34)')
-  brillo(980, 520, 460, 'rgba(251,191,36,0.12)')
+  brillo(180, 260, 720, 'rgba(201,162,74,0.42)')
+  brillo(960, 1700, 820, 'rgba(168,132,36,0.34)')
+  brillo(980, 520, 460, 'rgba(226,201,138,0.12)')
 
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
 
   // Marca: el escudo (ya trae "Barbershop · Samuel S7yle"); si no carga, el nombre en texto
   if (logo) {
-    ctx.shadowColor = 'rgba(251,191,36,0.35)'
+    ctx.shadowColor = 'rgba(226,201,138,0.35)'
     ctx.shadowBlur = 60
     dibujarLogo(ctx, logo, W / 2, 90, 330)
     ctx.shadowBlur = 0
   } else {
-    ctx.fillStyle = '#fbbf24'
+    ctx.fillStyle = '#d6b468'
     ctx.font = `700 34px ${FUENTE}`
     ctx.letterSpacing = '10px'
     ctx.fillText('BARBERSHOP', W / 2 + 5, 250)
@@ -74,7 +74,7 @@ export async function dibujarEstado(canvas, url) {
   }
 
   // Titular
-  ctx.fillStyle = '#fde68a'
+  ctx.fillStyle = '#ecdcae'
   ctx.font = `700 70px ${FUENTE}`
   ctx.fillText('Regístrate como', W / 2, 540)
   ctx.fillText('cliente', W / 2, 622)
@@ -85,7 +85,7 @@ export async function dibujarEstado(canvas, url) {
   // QR sobre tarjeta blanca (máximo contraste para que escanee bien)
   const lado = 640, pad = 48
   const cx = (W - lado - pad * 2) / 2, cy = 760
-  ctx.shadowColor = 'rgba(217,119,6,0.45)'
+  ctx.shadowColor = 'rgba(201,162,74,0.45)'
   ctx.shadowBlur = 80
   ctx.fillStyle = '#ffffff'
   roundRect(ctx, cx, cy, lado + pad * 2, lado + pad * 2, 56)

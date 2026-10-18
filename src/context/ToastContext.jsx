@@ -9,9 +9,9 @@ const ICONS = {
   warning: AlertCircle,
 }
 const COLORS = {
-  success: { bg: 'rgba(52,211,153,0.18)',  border: 'rgba(52,211,153,0.40)',  icon: '#6ee7b7' },
+  success: { bg: 'rgba(124,192,147,0.18)',  border: 'rgba(124,192,147,0.40)',  icon: '#9fd3ae' },
   error:   { bg: 'rgba(239,68,68,0.18)',   border: 'rgba(239,68,68,0.40)',   icon: '#fca5a5' },
-  warning: { bg: 'rgba(251,191,36,0.18)',  border: 'rgba(251,191,36,0.40)',  icon: '#fde68a' },
+  warning: { bg: 'rgba(226,201,138,0.18)',  border: 'rgba(226,201,138,0.40)',  icon: '#ecdcae' },
 }
 
 export function ToastProvider({ children }) {

@@ -22,7 +22,7 @@ function formatHora(hora) {
 
 const ESTADO_CFG = {
   pendiente:  { label: 'Pendiente',  bg: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.55)' },
-  atendida:   { label: 'Atendida',   bg: 'rgba(52,211,153,0.18)',  color: '#6ee7b7' },
+  atendida:   { label: 'Atendida',   bg: 'rgba(124,192,147,0.18)',  color: '#9fd3ae' },
   cancelada:  { label: 'Cancelada',  bg: 'rgba(239,68,68,0.18)',   color: '#fca5a5' },
   no_asistio: { label: 'No asistió', bg: 'rgba(251,146,60,0.18)',  color: '#fdba74' },
 }
@@ -165,7 +165,7 @@ export default function DetalleCliente() {
         {/* Perfil */}
         <div className="glass-card flex flex-col items-center gap-3 py-6">
           <div className="w-20 h-20 rounded-full flex items-center justify-center"
-               style={{background:'rgba(217,119,6,0.20)', border:'1px solid rgba(217,119,6,0.40)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.30)'}}>
+               style={{background:'rgba(201,162,74,0.20)', border:'1px solid rgba(201,162,74,0.40)', boxShadow:'inset 0 1px 0 rgba(255,255,255,0.30)'}}>
             <span className="text-amber-300 text-2xl font-bold">
               {(cliente.nombre||' ')[0].toUpperCase()}{(cliente.apellido||' ')[0].toUpperCase()}
             </span>
@@ -215,9 +215,9 @@ export default function DetalleCliente() {
         {/* Próxima cita */}
         {proximaCita ? (
           <div className="glass-card flex items-center gap-3"
-               style={{background:'rgba(217,119,6,0.12)', border:'1px solid rgba(217,119,6,0.30)'}}>
+               style={{background:'rgba(201,162,74,0.12)', border:'1px solid rgba(201,162,74,0.30)'}}>
             <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                 style={{background:'rgba(217,119,6,0.20)', border:'1px solid rgba(217,119,6,0.35)'}}>
+                 style={{background:'rgba(201,162,74,0.20)', border:'1px solid rgba(201,162,74,0.35)'}}>
               <Calendar size={19} className="text-amber-300" />
             </div>
             <div className="flex-1 min-w-0">
@@ -240,9 +240,9 @@ export default function DetalleCliente() {
         ) : (
           <button onClick={() => navigate(`/citas/nueva?cliente=${id}`)}
                   className="glass-card flex items-center gap-3 w-full text-left"
-                  style={{border:'1px dashed rgba(217,119,6,0.30)'}}>
+                  style={{border:'1px dashed rgba(201,162,74,0.30)'}}>
             <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                 style={{background:'rgba(217,119,6,0.10)'}}>
+                 style={{background:'rgba(201,162,74,0.10)'}}>
               <CalendarPlus size={19} className="text-amber-400/60" />
             </div>
             <div>
@@ -254,11 +254,11 @@ export default function DetalleCliente() {
 
         {/* Totales */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="glass-card text-center py-4" style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.20)'}}>
+          <div className="glass-card text-center py-4" style={{background:'rgba(124,192,147,0.10)', border:'1px solid rgba(124,192,147,0.20)'}}>
             <p className="text-xs text-emerald-300/70 mb-1">Total USD</p>
             <p className="text-xl font-bold text-emerald-300">${totalUSD.toFixed(2)}</p>
           </div>
-          <div className="glass-card text-center py-4" style={{background:'rgba(125,211,252,0.10)', border:'1px solid rgba(125,211,252,0.20)'}}>
+          <div className="glass-card text-center py-4" style={{background:'rgba(134,174,198,0.10)', border:'1px solid rgba(134,174,198,0.20)'}}>
             <p className="text-xs text-sky-300/70 mb-1">Total Bs.</p>
             <p className="text-xl font-bold text-sky-300">{totalBs.toFixed(2)}</p>
           </div>
@@ -274,7 +274,7 @@ export default function DetalleCliente() {
             <button key={t.key} onClick={() => setTabActivo(t.key)}
                     className="py-2.5 rounded-2xl text-sm font-semibold transition-all"
                     style={{
-                      background: tabActivo === t.key ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)',
+                      background: tabActivo === t.key ? 'rgba(201,162,74,0.20)' : 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.15)',
                       color: tabActivo === t.key ? 'white' : 'rgba(255,255,255,0.40)'
                     }}>
@@ -299,7 +299,7 @@ export default function DetalleCliente() {
                   <div key={i.id} className="flex items-center gap-3 rounded-2xl px-3 py-3"
                        style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)'}}>
                     <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                         style={{background:'rgba(52,211,153,0.15)'}}>
+                         style={{background:'rgba(124,192,147,0.15)'}}>
                       <DollarSign size={15} className="text-emerald-300" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -358,7 +358,7 @@ export default function DetalleCliente() {
                     <div key={c.id} className="flex items-center gap-3 rounded-2xl px-3 py-3"
                          style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.09)'}}>
                       <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                           style={{background:'rgba(217,119,6,0.15)'}}>
+                           style={{background:'rgba(201,162,74,0.15)'}}>
                         <Calendar size={15} className="text-amber-300" />
                       </div>
                       <div className="flex-1 min-w-0">

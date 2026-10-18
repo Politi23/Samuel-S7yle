@@ -4,8 +4,8 @@
   "description": "Gestión de barbería · Puerto Cabello",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0a00",
-  "theme_color": "#d97706",
+  "background_color": "#0b0a08",
+  "theme_color": "#0b0a08",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

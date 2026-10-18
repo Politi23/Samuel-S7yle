@@ -232,14 +232,14 @@ export default function Ingresos() {
 
         {/* Totales con toggle mes/año */}
         <div className="space-y-2">
-          <div className="glass-card text-center py-4 space-y-3" style={{background:'rgba(217,119,6,0.15)', border:'1px solid rgba(217,119,6,0.30)'}}>
+          <div className="glass-card text-center py-4 space-y-3" style={{background:'rgba(201,162,74,0.15)', border:'1px solid rgba(201,162,74,0.30)'}}>
             <div className="flex justify-center">
               <div className="flex rounded-xl overflow-hidden" style={{border:'1px solid rgba(255,255,255,0.18)'}}>
                 {[['mes', MESES[mes].slice(0,3)], ['anio', String(anio)]].map(([v, l]) => (
                   <button key={v} onClick={() => setVistaTotal(v)}
                           className="px-4 py-1.5 text-xs font-semibold transition-all"
                           style={{
-                            background: vistaTotal === v ? 'rgba(255,255,255,0.22)' : 'transparent',
+                            background: vistaTotal === v ? 'rgba(201,162,74,0.20)' : 'transparent',
                             color: vistaTotal === v ? 'white' : 'rgba(255,255,255,0.40)',
                           }}>
                     {l}
@@ -254,11 +254,11 @@ export default function Ingresos() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="glass-card text-center py-3" style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.20)'}}>
+            <div className="glass-card text-center py-3" style={{background:'rgba(124,192,147,0.10)', border:'1px solid rgba(124,192,147,0.20)'}}>
               <p className="text-xs text-emerald-300/70 font-semibold mb-1">USD directo</p>
               <p className="text-xl font-bold text-emerald-300">${usdDirecto.toFixed(2)}</p>
             </div>
-            <div className="glass-card text-center py-3" style={{background:'rgba(125,211,252,0.10)', border:'1px solid rgba(125,211,252,0.20)'}}>
+            <div className="glass-card text-center py-3" style={{background:'rgba(134,174,198,0.10)', border:'1px solid rgba(134,174,198,0.20)'}}>
               <p className="text-xs text-sky-300/70 font-semibold mb-1">Total Bs.</p>
               <p className="text-xl font-bold text-sky-300">{bsTotal.toFixed(2)}</p>
             </div>
@@ -277,7 +277,7 @@ export default function Ingresos() {
                 <p className="text-white/45 text-xs">Promedio por día</p>
                 <p className="text-white text-lg font-bold">${promedioDia.toFixed(2)}</p>
               </div>
-              <div className="rounded-2xl p-3 text-center" style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.20)'}}>
+              <div className="rounded-2xl p-3 text-center" style={{background:'rgba(124,192,147,0.10)', border:'1px solid rgba(124,192,147,0.20)'}}>
                 <p className="text-emerald-300/70 text-xs">Mejor día</p>
                 <p className="text-emerald-300 text-lg font-bold">${mejorDia ? mejorDia[1].totalUsd.toFixed(2) : '0.00'}</p>
                 {mejorDia && <p className="text-white/30 text-[10px]">{formatFecha(mejorDia[0])}</p>}
@@ -338,12 +338,12 @@ export default function Ingresos() {
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{background: esUsd ? 'rgba(52,211,153,0.9)' : 'rgba(125,211,252,0.9)'}} />
+                                style={{background: esUsd ? 'rgba(124,192,147,0.9)' : 'rgba(134,174,198,0.9)'}} />
                           <span className="text-white/85 text-sm truncate">{metodo}</span>
                           <span className="text-white/30 text-xs flex-shrink-0">{count}×</span>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <span className="font-bold text-sm" style={{color: esUsd ? '#6ee7b7' : '#7dd3fc'}}>
+                          <span className="font-bold text-sm" style={{color: esUsd ? '#9fd3ae' : '#a9c7da'}}>
                             ${totalUsd.toFixed(2)}
                           </span>
                           <span className="text-white/30 text-xs ml-1">{pct.toFixed(0)}%</span>
@@ -354,8 +354,8 @@ export default function Ingresos() {
                              style={{
                                width: `${pct}%`,
                                background: esUsd
-                                 ? 'linear-gradient(90deg, rgba(52,211,153,0.7), rgba(52,211,153,0.4))'
-                                 : 'linear-gradient(90deg, rgba(125,211,252,0.7), rgba(125,211,252,0.4))'
+                                 ? 'linear-gradient(90deg, rgba(124,192,147,0.7), rgba(124,192,147,0.4))'
+                                 : 'linear-gradient(90deg, rgba(134,174,198,0.7), rgba(134,174,198,0.4))'
                              }} />
                       </div>
                     </div>
@@ -376,7 +376,7 @@ export default function Ingresos() {
             <button key={m} onClick={() => setFiltroMoneda(m)}
                     className="py-2.5 rounded-2xl text-sm font-semibold transition-all"
                     style={{
-                      background: filtroMoneda === m ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)',
+                      background: filtroMoneda === m ? 'rgba(201,162,74,0.20)' : 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.15)',
                       color: filtroMoneda === m ? 'white' : 'rgba(255,255,255,0.40)'
                     }}>
@@ -401,7 +401,7 @@ export default function Ingresos() {
             {filtrados.map(i => (
               <div key={i.id} className="glass-card flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                     style={{background:'rgba(52,211,153,0.15)', border:'1px solid rgba(52,211,153,0.25)'}}>
+                     style={{background:'rgba(124,192,147,0.15)', border:'1px solid rgba(124,192,147,0.25)'}}>
                   <DollarSign size={19} className="text-emerald-300" />
                 </div>
                 <div className="flex-1 min-w-0">

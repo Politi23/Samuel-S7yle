@@ -109,7 +109,7 @@ export default function NuevaCita() {
             <div className="flex items-center justify-between rounded-2xl px-3 py-3"
                  style={{background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)'}}>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:'rgba(217,119,6,0.20)'}}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:'rgba(201,162,74,0.20)'}}>
                   <span className="text-amber-300 font-bold text-xs">{(form.cliente_nombre||'').split(' ').filter(n=>n).map(n=>n[0].toUpperCase()).slice(0,2).join('')}</span>
                 </div>
                 <span className="text-white text-sm font-semibold">{form.cliente_nombre}</span>
@@ -128,7 +128,7 @@ export default function NuevaCita() {
                 <div className="space-y-1 max-h-52 overflow-y-auto">
                   {filtrados.map(c => (
                     <button key={c.id} onClick={() => seleccionar(c)} className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 active:bg-white/10 text-left" style={{background:'rgba(255,255,255,0.06)'}}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(217,119,6,0.20)'}}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{background:'rgba(201,162,74,0.20)'}}>
                         <span className="text-amber-300 font-bold text-xs">{c.nombre[0].toUpperCase()}{c.apellido[0].toUpperCase()}</span>
                       </div>
                       <div>
@@ -170,8 +170,8 @@ export default function NuevaCita() {
                   <button key={m} type="button" onClick={() => toggleMotivo(m)}
                           className="px-3 py-1.5 rounded-2xl text-xs font-semibold transition-all"
                           style={{
-                            background: activo ? 'rgba(217,119,6,0.45)' : 'rgba(255,255,255,0.08)',
-                            border: `1px solid ${activo ? 'rgba(217,119,6,0.70)' : 'rgba(255,255,255,0.15)'}`,
+                            background: activo ? 'rgba(201,162,74,0.45)' : 'rgba(255,255,255,0.08)',
+                            border: `1px solid ${activo ? 'rgba(201,162,74,0.70)' : 'rgba(255,255,255,0.15)'}`,
                             color: activo ? 'white' : 'rgba(255,255,255,0.50)',
                           }}>
                     {m}
