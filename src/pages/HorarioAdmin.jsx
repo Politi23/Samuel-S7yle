@@ -54,6 +54,31 @@ function proximaMediaHora() {
 
 const sumarMinutos = (hhmm, min) => deMinutos(Math.min(aMinutos(hhmm) + min, 23 * 60 + 59))
 
+/* ── Confirmación de borrado en línea ────────────────────────── */
+function ConfirmarBorrado({ texto, onCancelar, onBorrar }) {
+  return (
+    <div className="mt-3 rounded-[14px] p-3 space-y-3" role="alertdialog" aria-label={texto}
+         style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.25)' }}>
+      <div>
+        <p className="text-white text-sm font-bold">{texto}</p>
+        <p className="text-white/55 text-xs mt-0.5">Las citas agendadas no se borran.</p>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onCancelar}
+                className="flex-1 rounded-[12px] min-h-[44px] text-sm font-bold text-white/80"
+                style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line-strong)' }}>
+          Cancelar
+        </button>
+        <button onClick={onBorrar}
+                className="flex-1 rounded-[12px] min-h-[44px] text-sm font-bold text-white"
+                style={{ background: 'rgba(239,68,68,0.55)', border: '1px solid rgba(239,68,68,0.65)' }}>
+          Sí, borrar
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /* ── Estado de guardado ──────────────────────────────────────── */
 function EstadoGuardado({ estado, onReintentar }) {
   if (!estado) return null
@@ -82,6 +107,7 @@ export default function HorarioAdmin() {
   const [estados, setEstados]     = useState({})
   const [editando, setEditando]   = useState(null)
   const [nuevo, setNuevo]         = useState(null) // { inicio, fin, error } mientras agrega un cupo
+  const [confirmar, setConfirmar] = useState(null) // 'dia' | 'semana' mientras pide confirmación
 
   const citasRef    = useRef(citas)
   const pendientes  = useRef({})
@@ -197,6 +223,24 @@ export default function HorarioAdmin() {
     setNuevo({ inicio: slot.fin, fin: sumarMinutos(slot.fin, dur), error: '' })
   }
 
+  const borrarDia = () => {
+    cambiarDia(dia.id, d => ({ ...d, slots: [] }))
+    setConfirmar(null)
+    setNuevo(null)
+    toast(`Cupos de ${etiquetaDia(dia).toLowerCase()} borrados`, 'success')
+  }
+
+  const borrarSemana = () => {
+    const vacios = diasVista.map(d => ({ ...d, slots: [] }))
+    setDias(vacios)
+    vacios.forEach(d => programar(d))
+    setConfirmar(null)
+    setNuevo(null)
+    toast('Cupos de la semana borrados', 'success')
+  }
+
+  const totalSemana = diasVista.reduce((n, d) => n + d.slots.length, 0)
+
   const compartir = async () => {
     if (navigator.share) {
       try { await navigator.share({ title: 'Samuel S7yle', text: '💈 Cupos disponibles de Samuel S7yle', url: urlPublica }); return }
@@ -247,7 +291,7 @@ export default function HorarioAdmin() {
               const n = libresDe(d)
               return (
                 <button key={d.id} role="tab" aria-selected={sel}
-                        onClick={() => { setSelId(d.id); setEditando(null); setNuevo(null) }}
+                        onClick={() => { setSelId(d.id); setEditando(null); setNuevo(null); setConfirmar(null) }}
                         className="flex flex-col items-center justify-center gap-1 rounded-[12px] py-2.5 min-h-[60px] transition-colors duration-150"
                         style={{
                           background: sel ? 'rgba(201,162,74,0.16)' : 'rgba(255,244,222,0.035)',
@@ -408,9 +452,39 @@ export default function HorarioAdmin() {
                     <Plus size={17} className="text-amber-300" /> Agregar cupo
                   </button>
                 )}
+
+                {slots.length > 0 && !nuevo && (
+                  confirmar === 'dia' ? (
+                    <ConfirmarBorrado
+                      texto={`¿Borrar los ${slots.length} ${slots.length === 1 ? 'cupo' : 'cupos'} de ${etiquetaDia(dia).toLowerCase()}?`}
+                      onCancelar={() => setConfirmar(null)} onBorrar={borrarDia} />
+                  ) : (
+                    <button onClick={() => setConfirmar('dia')}
+                            className="mt-2 w-full flex items-center justify-center gap-2 min-h-[44px] text-[13px] font-semibold text-red-300/80 active:text-red-300">
+                      <Trash2 size={14} /> Borrar los cupos de este día
+                    </button>
+                  )
+                )}
               </>
             )}
           </section>
+        )}
+
+        {/* ── Borrar toda la semana ── */}
+        {!cargando && totalSemana > 0 && (
+          confirmar === 'semana' ? (
+            <div className="glass-card">
+              <ConfirmarBorrado
+                texto={`¿Borrar los ${totalSemana} cupos de toda la semana?`}
+                onCancelar={() => setConfirmar(null)} onBorrar={borrarSemana} />
+            </div>
+          ) : (
+            <button onClick={() => setConfirmar('semana')}
+                    className="w-full flex items-center justify-center gap-2 rounded-[14px] min-h-[48px] text-[13px] font-semibold text-red-300/85 active:scale-[0.99] transition-transform"
+                    style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.22)' }}>
+              <Trash2 size={15} /> Borrar todos los cupos de la semana
+            </button>
+          )
         )}
       </div>
     </div>
