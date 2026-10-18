@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Scissors, CheckCircle2, CalendarClock } from 'lucide-react'
+import { CheckCircle2, CalendarClock } from 'lucide-react'
 
 const PREFIJOS = ['0412', '0422', '0414', '0416', '0424', '0426']
 const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '', website: '' }
@@ -99,20 +99,20 @@ export default function RegistroPublico() {
         <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           {/* Marca */}
-          <header style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 18,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(217,119,6,0.20)',
-              border: '1px solid rgba(217,119,6,0.42)',
-              boxShadow: '0 0 32px rgba(217,119,6,0.18), inset 0 1px 0 rgba(255,255,255,0.28)',
-            }}>
-              <Scissors size={26} color="#fbbf24" strokeWidth={1.8} />
-            </div>
+          <header style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            {/* El escudo ya dice "Samuel S7yle"; el PNG trae margen transparente, los márgenes negativos lo compensan */}
+            <h1 style={{ margin: 0, lineHeight: 0 }}>
+              <img
+                src="/android-chrome-512x512.png"
+                alt="Samuel S7yle Barbershop"
+                width={200} height={200}
+                style={{
+                  display: 'block', width: 200, height: 200, margin: '-27px 0 -27px',
+                  filter: 'drop-shadow(0 0 24px rgba(251,191,36,0.28))',
+                }}
+              />
+            </h1>
             <div>
-              <h1 style={{ margin: 0, color: '#fff', fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                Samuel S7yle
-              </h1>
               <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.52)', fontSize: 13 }}>
                 {resultado ? 'Puerto Cabello, Venezuela' : 'Regístrate como cliente en menos de un minuto'}
               </p>
