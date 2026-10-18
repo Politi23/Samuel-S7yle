@@ -120,6 +120,16 @@ export default function Dashboard() {
     return t ? a + Number(i.monto) / t : a
   }, 0)
 
+  // ── Ingresos de hoy ──
+  const ingresosHoy   = ingresos.filter(i => i.fecha === hoyStr)
+  const hoyUsdDirecto = ingresosHoy.filter(i => i.moneda === 'USD').reduce((a, i) => a + Number(i.monto), 0)
+  const hoyBs         = ingresosHoy.filter(i => i.moneda === 'Bs').reduce((a, i) => a + Number(i.monto), 0)
+  const totalHoyUsd   = ingresosHoy.reduce((a, i) => {
+    if (i.moneda === 'USD') return a + Number(i.monto)
+    const t = Number(i.tasa_bcv)
+    return t ? a + Number(i.monto) / t : a
+  }, 0)
+
   const clientesNuevosMes = clientes.filter(c => {
     if (!c.created_at) return false
     const fechaVE = new Date(c.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Caracas' })
@@ -364,6 +374,23 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Ingresos de hoy */}
+        <button onClick={() => navigate('/ingresos')}
+                className="glass-card w-full py-4 text-center active:bg-white/5 transition-colors"
+                style={{background:'rgba(52,211,153,0.12)', border:'1px solid rgba(52,211,153,0.28)'}}>
+          <p className="text-xs text-emerald-300/70 font-semibold mb-1">Ingresos de hoy</p>
+          <p className="text-3xl font-bold text-emerald-300">${totalHoyUsd.toFixed(2)}</p>
+          {ingresosHoy.length > 0 ? (
+            <p className="text-white/40 text-xs mt-1">
+              {ingresosHoy.length} {ingresosHoy.length === 1 ? 'cobro' : 'cobros'}
+              {hoyUsdDirecto > 0 && ` · $${hoyUsdDirecto.toFixed(2)} USD`}
+              {hoyBs > 0 && ` · Bs. ${hoyBs.toFixed(2)}`}
+            </p>
+          ) : (
+            <p className="text-white/30 text-xs mt-1">Sin cobros registrados hoy</p>
+          )}
+        </button>
 
         {/* Total mes + Balance */}
         <div className="space-y-2">

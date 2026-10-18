@@ -126,6 +126,7 @@ export default function Ingresos() {
   const [vistaTotal, setVistaTotal] = useState('mes')
   const [verResumen, setVerResumen] = useState(false)
   const [verMetodos, setVerMetodos] = useState(false)
+  const [verDias,    setVerDias]    = useState(false)
 
   const irAnterior = () => { if (mes === 0) { setMes(11); setAnio(a => a-1) } else setMes(m => m-1) }
   const irSiguiente = () => { if (mes === 11) { setMes(0); setAnio(a => a+1) } else setMes(m => m+1) }
@@ -163,6 +164,21 @@ export default function Ingresos() {
     })
     return Object.entries(map).sort((a, b) => b[1].totalUsd - a[1].totalUsd)
   })()
+
+  // Resumen por día del mes (ingresos diarios)
+  const resumenDias = (() => {
+    const map = {}
+    ingresosMes.forEach(i => {
+      if (!i.fecha) return
+      if (!map[i.fecha]) map[i.fecha] = { count: 0, totalUsd: 0 }
+      map[i.fecha].count++
+      const t = Number(i.tasa_bcv) || tasaHoy
+      map[i.fecha].totalUsd += i.moneda === 'USD' ? Number(i.monto) : (t ? Number(i.monto) / t : 0)
+    })
+    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]))
+  })()
+  const promedioDia = resumenDias.length ? resumenDias.reduce((a, [, v]) => a + v.totalUsd, 0) / resumenDias.length : 0
+  const mejorDia = resumenDias.reduce((mejor, actual) => (!mejor || actual[1].totalUsd > mejor[1].totalUsd) ? actual : mejor, null)
 
   const resumenServicios = (() => {
     const map = {}
@@ -248,6 +264,40 @@ export default function Ingresos() {
             </div>
           </div>
         </div>
+
+        {/* Ingresos por día */}
+        {ingresosMes.length > 0 && (
+          <div className="glass-card space-y-3">
+            <button onClick={() => setVerDias(v => !v)} className="w-full flex items-center justify-between">
+              <span className="text-white font-semibold text-sm">Por día · {MESES[mes]}</span>
+              {verDias ? <ChevronUp size={16} className="text-white/40" /> : <ChevronDown size={16} className="text-white/40" />}
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-2xl p-3 text-center" style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.10)'}}>
+                <p className="text-white/45 text-xs">Promedio por día</p>
+                <p className="text-white text-lg font-bold">${promedioDia.toFixed(2)}</p>
+              </div>
+              <div className="rounded-2xl p-3 text-center" style={{background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.20)'}}>
+                <p className="text-emerald-300/70 text-xs">Mejor día</p>
+                <p className="text-emerald-300 text-lg font-bold">${mejorDia ? mejorDia[1].totalUsd.toFixed(2) : '0.00'}</p>
+                {mejorDia && <p className="text-white/30 text-[10px]">{formatFecha(mejorDia[0])}</p>}
+              </div>
+            </div>
+            {verDias && (
+              <div className="space-y-2">
+                {resumenDias.map(([fecha, { count, totalUsd }]) => (
+                  <div key={fecha} className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/85 text-sm">{formatFecha(fecha)}</p>
+                      <p className="text-white/35 text-xs">{count} {count === 1 ? 'cobro' : 'cobros'}</p>
+                    </div>
+                    <span className="text-emerald-300 text-sm font-bold flex-shrink-0">${totalUsd.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Resumen por servicio */}
         {ingresosMes.length > 0 && (
