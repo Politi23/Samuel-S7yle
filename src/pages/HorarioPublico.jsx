@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
+import { ordenarDesdeHoy, ordenarSlots, etiquetaDia, fechaDelDia, estaOcupado, yaPaso, fmtHora as fmt } from '../lib/horario'
 import { Clock, CheckCircle2, XCircle, AlertCircle, WifiOff } from 'lucide-react'
 
 function tiempoDesde(ts) {
@@ -11,22 +12,10 @@ function tiempoDesde(ts) {
   return `hace ${Math.floor(min / 60)}h`
 }
 
-function diaActualVE() {
-  return new Date()
-    .toLocaleDateString('es-VE', { weekday: 'long', timeZone: 'America/Caracas' })
-    .replace(/^\w/, c => c.toUpperCase())
-}
-
-function fmt(hora) {
-  if (!hora) return ''
-  const [h, m] = hora.split(':').map(Number)
-  const periodo = h < 12 ? 'am' : 'pm'
-  const h12 = h % 12 || 12
-  return m === 0 ? `${h12}${periodo}` : `${h12}:${String(m).padStart(2, '0')}${periodo}`
-}
-
 function waLink(dia, slot) {
-  const msg = `Hola Samuel! Quiero confirmar mi cupo el ${dia} de ${fmt(slot.inicio)} a ${fmt(slot.fin)} 🙏`
+  const [, mm, dd] = fechaDelDia(dia).split('-')
+  const cuando = dia.relativo === 0 ? 'hoy' : dia.relativo === 1 ? 'mañana' : `el ${dia.dia.toLowerCase()}`
+  const msg = `Hola Samuel! Quiero confirmar mi cupo ${cuando} ${dd}/${mm} de ${fmt(slot.inicio)} a ${fmt(slot.fin)} 🙏`
   return `https://wa.me/584121381501?text=${encodeURIComponent(msg)}`
 }
 
@@ -54,10 +43,10 @@ export default function HorarioPublico() {
         if (!data || data.length === 0) { setCargando(false); return }
 
         const barberId = data[0].user_id
-        const filas = data
+        // La semana empieza hoy: Hoy, Mañana, …
+        const filas = ordenarDesdeHoy(data
           .filter(d => d.user_id === barberId)
-          .sort((a, b) => a.orden - b.orden)
-          .map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] }))
+          .map(d => ({ ...d, slots: ordenarSlots(Array.isArray(d.slots) ? d.slots : []) })))
         setDias(filas)
         const ts = filas.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)
         setUltimaAct(ts)
@@ -84,7 +73,6 @@ export default function HorarioPublico() {
     }
   }, [])
 
-  const hoy = diaActualVE()
 
   return (
     <>
@@ -155,16 +143,20 @@ export default function HorarioPublico() {
                   </div>
                 ))
                 : dias.map((dia, i) => {
-                  const esHoy  = dia.dia.toLowerCase() === hoy.toLowerCase()
-                  const slots  = dia.slots || []
-                  const libres = slots.filter(s => !s.ocupado)
+                  const esHoy  = dia.relativo === 0
+                  // Los cupos de hoy que ya empezaron no se muestran
+                  const slots  = (dia.slots || []).filter(s => !yaPaso(dia, s))
+                  const libres = slots.filter(s => !estaOcupado(dia, s))
+                  const [, mm, dd] = fechaDelDia(dia).split('-')
 
-                  /* badge — solo cuenta los cupos reales (slots); el día cerrado manda */
+                  /* badge — el día cerrado manda; luego lo que queda libre */
                   let badge
                   if (!dia.abierto) {
                     badge = { color: 'rgba(255,255,255,0.25)', bg: 'transparent', border: 'rgba(255,255,255,0.10)', Icon: XCircle, label: 'Cerrado' }
+                  } else if (esHoy && slots.length === 0 && (dia.slots || []).length > 0) {
+                    badge = { color: 'rgba(255,255,255,0.55)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.12)', Icon: Clock, label: 'Terminó por hoy' }
                   } else if (libres.length === 0) {
-                    badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: 'Sin cupos' }
+                    badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: slots.length ? 'Lleno' : 'Sin cupos' }
                   } else if (libres.length <= 2) {
                     badge = { color: '#d6b468', bg: 'rgba(226,201,138,0.12)',  border: 'rgba(226,201,138,0.20)',  Icon: AlertCircle,  label: `${libres.length} libre${libres.length !== 1 ? 's' : ''}` }
                   } else {
@@ -194,13 +186,11 @@ export default function HorarioPublico() {
                             fontSize: esHoy ? 15 : 14,
                             fontWeight: esHoy ? 700 : 500,
                           }}>
-                            {dia.dia}
+                            {etiquetaDia(dia)}
                           </span>
-                          {esHoy && (
-                            <span style={{ color: 'rgba(226,201,138,0.50)', fontSize: 11, fontWeight: 600 }}>
-                              · hoy
-                            </span>
-                          )}
+                          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, fontWeight: 500 }}>
+                            {dia.relativo <= 1 ? `${dia.dia.toLowerCase()} ${dd}/${mm}` : `${dd}/${mm}`}
+                          </span>
                         </div>
 
                         <div style={{
@@ -219,7 +209,7 @@ export default function HorarioPublico() {
                       {/* Cupos bookables */}
                       {dia.abierto && slots.length > 0 && (
                         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {slots.map(slot => slot.ocupado ? (
+                          {slots.map(slot => estaOcupado(dia, slot) ? (
                             <div key={slot.id} style={{
                               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                               padding: '10px 12px', borderRadius: 10,
@@ -239,7 +229,7 @@ export default function HorarioPublico() {
                           ) : (
                             <a
                               key={slot.id}
-                              href={waLink(dia.dia, slot)}
+                              href={waLink(dia, slot)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="slot-wa"

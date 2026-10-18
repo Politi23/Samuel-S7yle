@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { sincronizarHorario } from '../lib/sincronizarHorario'
 
 const AppContext = createContext()
 
@@ -73,6 +74,13 @@ export function AppProvider({ children }) {
       subscription.unsubscribe()
     }
   }, [])
+
+  // Cada cambio en las citas (al cargar, crear, editar, borrar o cambiar estado)
+  // ocupa o libera los cupos del horario público automáticamente
+  useEffect(() => {
+    if (!userId || loading) return
+    sincronizarHorario(userId, citas)
+  }, [citas, userId, loading])
 
   // ── Clientes ───────────────────────────────────────────────
   const agregarCliente = async (datos) => {
