@@ -1,8 +1,11 @@
 import { ahoraVE, hoyVE, toFechaVE } from './fecha'
 
-// Lógica compartida del horario semanal (admin /disponibilidad y público /horario).
-// Cada fila de `disponibilidad` es un día de la semana con su lista de cupos:
-// slots: [{ id, inicio: 'HH:MM', fin: 'HH:MM', ocupado: bool }]
+// Lógica compartida del horario (admin /disponibilidad y público /horario).
+// Cada fila de `disponibilidad` es un día de la semana; sus cupos pertenecen a
+// una fecha concreta (Samuel no tiene horario fijo). Cuando esa fecha pasa, los
+// cupos dejan de mostrarse y se borran solos en el siguiente guardado.
+// slots: [{ id, dia_fecha: 'YYYY-MM-DD', inicio: 'HH:MM', fin: 'HH:MM',
+//           ocupado: bool, fecha?: 'YYYY-MM-DD', cita?: id }]
 
 export const DIAS_CORTOS = {
   'lunes': 'Lun', 'martes': 'Mar', 'miércoles': 'Mié', 'jueves': 'Jue',
@@ -52,16 +55,16 @@ export function fmtHora(hhmm) {
   return m === 0 ? `${h12}${periodo}` : `${h12}:${String(m).padStart(2, '0')}${periodo}`
 }
 
-export function nuevoSlot(inicio, duracion) {
-  return { id: crypto.randomUUID(), inicio, fin: deMinutos(aMinutos(inicio) + duracion), ocupado: false }
+export function nuevoSlot(inicio, duracion, diaFecha) {
+  return { id: crypto.randomUUID(), dia_fecha: diaFecha, inicio, fin: deMinutos(aMinutos(inicio) + duracion), ocupado: false }
 }
 
-/* Cupos seguidos de `duracion` minutos entre `desde` y `hasta` */
-export function generarSlots(desde, hasta, duracion) {
+/* Cupos seguidos de `duracion` minutos entre `desde` y `hasta`, para la fecha `diaFecha` */
+export function generarSlots(desde, hasta, duracion, diaFecha) {
   const slots = []
   const fin = aMinutos(hasta)
   for (let t = aMinutos(desde); t + duracion <= fin; t += duracion) {
-    slots.push(nuevoSlot(deMinutos(t), duracion))
+    slots.push(nuevoSlot(deMinutos(t), duracion, diaFecha))
   }
   return slots
 }
@@ -84,10 +87,7 @@ export function yaPaso(dia, slot) {
   return dia.relativo === 0 && slot.inicio <= ahoraVE()
 }
 
-/* ── Ocupación por fecha ─────────────────────────────────────────
-   Los cupos son una plantilla semanal. Un cupo "ocupado" guarda la fecha
-   de esa ocupación, así la semana siguiente vuelve a salir libre solo.
-   Los ocupados por una cita guardan además `cita` (su id).            */
+/* ── Fechas ──────────────────────────────────────────────────── */
 
 /* Fecha (YYYY-MM-DD, hora de Caracas) que representa este día en los próximos 7 */
 export function fechaDelDia(dia) {
@@ -95,6 +95,11 @@ export function fechaDelDia(dia) {
   d.setDate(d.getDate() + (dia.relativo || 0))
   return toFechaVE(d)
 }
+
+/* El cupo es de la fecha que este día representa ahora (los de semanas pasadas no) */
+export const esVigente = (dia, slot) => !slot.dia_fecha || slot.dia_fecha === fechaDelDia(dia)
+
+export const slotsVigentes = (dia) => (dia.slots || []).filter(s => esVigente(dia, s))
 
 export function estaOcupado(dia, slot) {
   if (!slot.ocupado) return false
@@ -109,32 +114,33 @@ export function marcarOcupado(dia, slot, ocupado) {
 
 const CITA_ACTIVA = (c) => c.hora && c.estado !== 'cancelada' && c.estado !== 'no_asistio'
 
-/* Aplica las citas a los cupos de un día: ocupa los que tienen cita, libera los
-   que quedaron sin cita (cancelada, borrada o movida). Las marcas manuales no se tocan. */
+/* Pone al día los cupos de un día y devuelve el día cambiado, o null si no cambió nada:
+   - borra los cupos de fechas que ya pasaron,
+   - fecha los cupos viejos que no tenían fecha (pasan a ser de esta semana),
+   - ocupa los cupos que tienen cita y libera los que la perdieron (cancelada, borrada o movida).
+   Las marcas manuales de ocupado no se tocan. */
 export function aplicarCitas(dia, citas) {
   const fecha = fechaDelDia(dia)
   const delDia = citas.filter(c => c.fecha === fecha && CITA_ACTIVA(c))
+  const antes = dia.slots || []
   let cambio = false
-  const slots = (dia.slots || []).map(s => {
-    const cita = delDia.find(c => c.hora.slice(0, 5) >= s.inicio && c.hora.slice(0, 5) < s.fin)
+  const slots = antes.filter(s => esVigente(dia, s)).map(s => {
+    let r = s
+    if (!r.dia_fecha) r = { ...r, dia_fecha: fecha }
+    const cita = delDia.find(c => c.hora.slice(0, 5) >= r.inicio && c.hora.slice(0, 5) < r.fin)
     if (cita) {
-      if (s.ocupado && s.fecha === fecha && s.cita === cita.id) return s
-      cambio = true
-      return { ...s, ocupado: true, fecha, cita: cita.id }
+      if (!(r.ocupado && r.fecha === fecha && r.cita === cita.id)) r = { ...r, ocupado: true, fecha, cita: cita.id }
+    } else if (r.cita) {
+      r = { ...r, ocupado: false, fecha: null, cita: null }
+    } else if (r.ocupado && !r.fecha) {
+      r = { ...r, fecha }
     }
-    if (s.cita) {
-      cambio = true
-      return { ...s, ocupado: false, fecha: null, cita: null }
-    }
-    // Marca vieja sin fecha: se fija a la fecha de esta semana para que expire sola
-    if (s.ocupado && !s.fecha) {
-      cambio = true
-      return { ...s, fecha }
-    }
-    return s
+    if (r !== s) cambio = true
+    return r
   })
+  if (slots.length !== antes.length) cambio = true
   return cambio ? { ...dia, slots } : null
 }
 
 export const libresDe = (dia) =>
-  dia.abierto ? (dia.slots || []).filter(s => !estaOcupado(dia, s) && !yaPaso(dia, s)).length : 0
+  dia.abierto ? slotsVigentes(dia).filter(s => !estaOcupado(dia, s) && !yaPaso(dia, s)).length : 0

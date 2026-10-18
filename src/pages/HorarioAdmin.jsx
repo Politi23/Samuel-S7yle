@@ -31,6 +31,8 @@ function leerPreferencias() {
   catch { return { desde: '09:00', hasta: '18:00', cada: 60 } }
 }
 
+const cuandoDia = (dia) => dia.relativo === 0 ? 'hoy' : dia.relativo === 1 ? 'mañana' : `el ${dia.dia.toLowerCase()}`
+
 const fechaCorta = (dia) => {
   const d = new Date(fechaDelDia(dia) + 'T12:00')
   return d.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', '')
@@ -198,12 +200,12 @@ export default function HorarioAdmin() {
 
   const agregarSlot = () => {
     const ultimo = ordenarSlots(dia.slots).at(-1)
-    const slot = nuevoSlot(ultimo ? ultimo.fin : pref.desde, pref.cada)
+    const slot = nuevoSlot(ultimo ? ultimo.fin : pref.desde, pref.cada, fechaDelDia(dia))
     if (aMinutos(slot.fin) <= aMinutos(slot.inicio)) { toast('No caben más cupos hoy', 'error'); return }
     cambiarDia(dia.id, d => ({ ...d, slots: [...d.slots, slot] }))
   }
 
-  const slotsGenerados = generarSlots(pref.desde, pref.hasta, pref.cada)
+  const slotsGenerados = dia ? generarSlots(pref.desde, pref.hasta, pref.cada, fechaDelDia(dia)) : []
   const generar = () => {
     if (!slotsGenerados.length) return
     cambiarDia(dia.id, d => ({ ...d, abierto: true, slots: slotsGenerados }))
@@ -216,7 +218,7 @@ export default function HorarioAdmin() {
     if (!destino?.size) return
     const nuevos = diasVista.map(d => !destino.has(d.id) ? d : {
       ...d, abierto: true,
-      slots: dia.slots.map(s => ({ id: crypto.randomUUID(), inicio: s.inicio, fin: s.fin, ocupado: false })),
+      slots: dia.slots.map(s => ({ id: crypto.randomUUID(), dia_fecha: fechaDelDia(d), inicio: s.inicio, fin: s.fin, ocupado: false })),
     })
     setDias(nuevos)
     nuevos.filter(d => destino.has(d.id)).forEach(d => programar(d))
@@ -261,7 +263,7 @@ export default function HorarioAdmin() {
       <div className="px-4 pt-4 pb-8 space-y-4">
 
         <p className="text-white/55 text-[13px] leading-relaxed">
-          Se guarda solo. Las citas ocupan su cupo automáticamente y cada semana los cupos vuelven a quedar libres.
+          Pon los cupos de cada día cuando quieras; se guarda solo. Las citas ocupan su cupo automáticamente y los cupos de días que ya pasaron se borran solos.
         </p>
 
         {/* ── Días ── */}
@@ -320,14 +322,14 @@ export default function HorarioAdmin() {
 
             {!dia.abierto ? (
               <p className="text-white/55 text-sm mt-4 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
-                Los clientes ven este día como cerrado. Tus cupos quedan guardados para cuando lo vuelvas a abrir.
+                Los clientes ven este día como cerrado. Queda cerrado también las próximas semanas hasta que lo vuelvas a abrir.
               </p>
             ) : (slots.length === 0 || generando) ? (
               /* ── Generador ── */
               <div className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid var(--line)' }}>
                 <p className="text-white text-sm font-bold flex items-center gap-2">
                   <Wand2 size={15} className="text-amber-300" />
-                  {slots.length ? 'Crear los cupos de nuevo' : 'Crea los cupos de este día'}
+                  {slots.length ? 'Crear los cupos de nuevo' : `¿Atiendes ${cuandoDia(dia)}? Crea sus cupos`}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -437,7 +439,7 @@ export default function HorarioAdmin() {
                 </ul>
 
                 <p className="text-white/45 text-xs mt-1">
-                  Toca <span className="text-emerald-300 font-semibold">Libre</span> para marcarlo ocupado solo esta semana.
+                  Toca <span className="text-emerald-300 font-semibold">Libre</span> para marcarlo ocupado.
                 </p>
 
                 {/* ── Acciones del día ── */}

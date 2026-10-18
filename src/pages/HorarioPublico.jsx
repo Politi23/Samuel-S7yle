@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
-import { ordenarDesdeHoy, ordenarSlots, etiquetaDia, fechaDelDia, estaOcupado, yaPaso, fmtHora as fmt } from '../lib/horario'
+import { ordenarDesdeHoy, ordenarSlots, slotsVigentes, etiquetaDia, fechaDelDia, estaOcupado, yaPaso, fmtHora as fmt } from '../lib/horario'
 import { Clock, CheckCircle2, XCircle, AlertCircle, WifiOff } from 'lucide-react'
 
 function tiempoDesde(ts) {
@@ -145,7 +145,7 @@ export default function HorarioPublico() {
                 : dias.map((dia, i) => {
                   const esHoy  = dia.relativo === 0
                   // Los cupos de hoy que ya empezaron no se muestran
-                  const slots  = (dia.slots || []).filter(s => !yaPaso(dia, s))
+                  const slots  = slotsVigentes(dia).filter(s => !yaPaso(dia, s))
                   const libres = slots.filter(s => !estaOcupado(dia, s))
                   const [, mm, dd] = fechaDelDia(dia).split('-')
 
@@ -153,7 +153,7 @@ export default function HorarioPublico() {
                   let badge
                   if (!dia.abierto) {
                     badge = { color: 'rgba(255,255,255,0.25)', bg: 'transparent', border: 'rgba(255,255,255,0.10)', Icon: XCircle, label: 'Cerrado' }
-                  } else if (esHoy && slots.length === 0 && (dia.slots || []).length > 0) {
+                  } else if (esHoy && slots.length === 0 && slotsVigentes(dia).length > 0) {
                     badge = { color: 'rgba(255,255,255,0.55)', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.12)', Icon: Clock, label: 'Terminó por hoy' }
                   } else if (libres.length === 0) {
                     badge = { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.20)', Icon: XCircle,      label: slots.length ? 'Lleno' : 'Sin cupos' }
