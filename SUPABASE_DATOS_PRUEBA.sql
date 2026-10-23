@@ -2,15 +2,15 @@
 -- Datos de prueba para la CUENTA DE PRUEBAS (nunca la de Samuel)
 -- Ejecutar en: Supabase Dashboard → SQL Editor
 -- ================================================================
--- 1. Cambia el correo de abajo por el de la cuenta de pruebas.
--- 2. Ejecuta todo. Se puede correr las veces que quieras: primero borra
+-- Cuenta de pruebas: prueba@gmail.com (cámbialo abajo si usas otra).
+-- Ejecuta todo. Se puede correr las veces que quieras: primero borra
 --    lo que este script puso antes (lo marcado como "Dato de prueba").
 -- Fechas relativas a hoy (hora de Caracas), así siempre hay datos de
 -- hoy, de esta semana, de la semana pasada y de los últimos meses.
 
 DO $$
 DECLARE
-  correo  TEXT := 'CORREO_DE_LA_CUENTA_DE_PRUEBAS';   -- ← cambia esto
+  correo  TEXT := 'prueba@gmail.com';   -- cuenta de pruebas
   marca   CONSTANT TEXT := 'Dato de prueba';
   uid     UUID;
   hoy     DATE := (now() AT TIME ZONE 'America/Caracas')::date;
