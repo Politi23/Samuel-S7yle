@@ -4,6 +4,8 @@ import { useApp } from '../context/AppContext'
 import { useBcv } from '../hooks/useBcv'
 import { Plus, DollarSign, ChevronLeft, ChevronRight, Edit2, Trash2, FileText, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
+import SemanaIngresos from '../components/SemanaIngresos'
+import { aUsd } from '../lib/semana'
 import PageHeader from '../components/PageHeader'
 import { hoyVE } from '../lib/fecha'
 
@@ -130,14 +132,20 @@ export default function Ingresos() {
   const [verMetodos, setVerMetodos] = useState(false)
   const [verDias,    setVerDias]    = useState(false)
 
-  const irAnterior = () => { if (mes === 0) { setMes(11); setAnio(a => a-1) } else setMes(m => m-1) }
-  const irSiguiente = () => { if (mes === 11) { setMes(0); setAnio(a => a+1) } else setMes(m => m+1) }
+  const irAnterior = () => { setVistaTotal('mes'); if (mes === 0) { setMes(11); setAnio(a => a-1) } else setMes(m => m-1) }
+  const irSiguiente = () => { setVistaTotal('mes'); if (mes === 11) { setMes(0); setAnio(a => a+1) } else setMes(m => m+1) }
 
   const mesStr = `${anio}-${String(mes + 1).padStart(2, '0')}`
   const porMes = (i) => i.fecha && i.fecha.slice(0, 7) === mesStr
   const ingresosAnio = ingresos.filter(i => i.fecha && i.fecha.slice(0, 4) === String(anio))
-  const filtrados = ingresos.filter(i => porMes(i) && (filtroMoneda === 'todos' || i.moneda === filtroMoneda)).sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
   const ingresosMes = ingresos.filter(i => porMes(i))
+  // El listado y los resúmenes siguen el período elegido arriba (mes o año)
+  const ingresosPeriodo = vistaTotal === 'anio' ? ingresosAnio : ingresosMes
+  const periodoLabel = vistaTotal === 'anio' ? String(anio) : MESES[mes]
+  const porMoneda = (i) => filtroMoneda === 'todos' || i.moneda === filtroMoneda
+  const porFecha = (a, b) => (b.fecha || '').localeCompare(a.fecha || '')
+  const filtrados = ingresosPeriodo.filter(porMoneda).sort(porFecha)
+  const filtradosMes = ingresosMes.filter(porMoneda).sort(porFecha) // el PDF mensual siempre es del mes
   const totalUSD = ingresosMes.filter(i => i.moneda === 'USD').reduce((a, i) => a + Number(i.monto), 0)
   const totalBs  = ingresosMes.filter(i => i.moneda === 'Bs').reduce((a, i) => a + Number(i.monto), 0)
   const bsEnEur = ingresosMes.filter(i => i.moneda === 'Bs').reduce((a, i) => {
@@ -157,7 +165,7 @@ export default function Ingresos() {
   const METODOS_USD = ['Efectivo USD', 'Zelle', 'PayPal', 'Binance / Cripto']
   const resumenMetodos = (() => {
     const map = {}
-    ingresosMes.forEach(i => {
+    ingresosPeriodo.forEach(i => {
       const key = i.metodo_pago || 'Sin método'
       if (!map[key]) map[key] = { count: 0, totalUsd: 0, esUsd: METODOS_USD.includes(i.metodo_pago) }
       map[key].count++
@@ -170,7 +178,7 @@ export default function Ingresos() {
   // Resumen por día del mes (ingresos diarios)
   const resumenDias = (() => {
     const map = {}
-    ingresosMes.forEach(i => {
+    ingresosPeriodo.forEach(i => {
       if (!i.fecha) return
       if (!map[i.fecha]) map[i.fecha] = { count: 0, totalUsd: 0 }
       map[i.fecha].count++
@@ -184,7 +192,7 @@ export default function Ingresos() {
 
   const resumenServicios = (() => {
     const map = {}
-    ingresosMes.forEach(i => {
+    ingresosPeriodo.forEach(i => {
       const key = i.concepto || 'Sin servicio'
       if (!map[key]) map[key] = { count: 0, totalUsd: 0 }
       map[key].count++
@@ -198,13 +206,22 @@ export default function Ingresos() {
   const usdDirecto = vistaTotal === 'mes' ? totalUSD      : totalUSDanio
   const bsTotal    = vistaTotal === 'mes' ? totalBs       : totalBsanio
 
+  // Comparación con el período anterior: el mes previo, o el año pasado
+  const mesPrevio = mes === 0 ? 11 : mes - 1
+  const mesPrevioStr = `${mes === 0 ? anio - 1 : anio}-${String(mesPrevio + 1).padStart(2, '0')}`
+  const totalPrevio = aUsd(vistaTotal === 'anio'
+    ? ingresos.filter(i => i.fecha && i.fecha.slice(0, 4) === String(anio - 1))
+    : ingresos.filter(i => i.fecha && i.fecha.slice(0, 7) === mesPrevioStr), tasaHoy)
+  const etiquetaPrevia = vistaTotal === 'anio' ? String(anio - 1) : MESES[mesPrevio].toLowerCase()
+  const pctPrevio = totalPrevio > 0 ? ((combinado - totalPrevio) / totalPrevio) * 100 : null
+
   return (
     <div className="min-h-screen">
       <PageHeader
         title="Ingresos"
         action={
           <div className="flex gap-2">
-            <button onClick={() => exportarPDF(filtrados, mes, anio, totalUSD, totalBs, totalEnUsd)}
+            <button onClick={() => exportarPDF(filtradosMes, mes, anio, totalUSD, totalBs, totalEnUsd)}
                     className="glass-btn-icon w-10 h-10 flex items-center justify-center" title="PDF mensual">
               <FileText size={17} className="text-white/70" />
             </button>
@@ -254,7 +271,15 @@ export default function Ingresos() {
           <p className="text-amber-200 text-[32px] font-extrabold leading-none mt-1" style={{ letterSpacing: '-0.03em' }}>
             ${combinado.toFixed(2)}
           </p>
-          <p className="text-white/45 text-[11px] mt-1.5">USD + Bs a la tasa EUR del día de cada cobro</p>
+          {pctPrevio !== null ? (
+            <p className="text-xs font-bold mt-2" style={{ color: pctPrevio >= 0 ? '#9fd3ae' : '#fca5a5' }}>
+              {pctPrevio >= 0 ? '↑' : '↓'} {Math.abs(pctPrevio).toFixed(1)}% vs {etiquetaPrevia}
+              <span className="text-white/45 font-medium"> (${totalPrevio.toFixed(2)})</span>
+            </p>
+          ) : (
+            <p className="text-white/45 text-xs mt-2">Sin cobros en {etiquetaPrevia} para comparar</p>
+          )}
+          <p className="text-white/45 text-[11px] mt-1">USD + Bs a la tasa EUR del día de cada cobro</p>
           <dl className="mt-4 text-sm">
             {[
               ['Cobrado en USD', `$${usdDirecto.toFixed(2)}`, 'text-emerald-300'],
@@ -268,22 +293,25 @@ export default function Ingresos() {
           </dl>
         </section>
 
+        {/* Esta semana: siempre la de hoy, no sigue al selector de mes */}
+        <SemanaIngresos ingresos={ingresos} hoyStr={hoyStr} tasaRespaldo={tasaHoy} />
+
         {/* Ingresos por día */}
-        {ingresosMes.length > 0 && (
+        {ingresosPeriodo.length > 0 && (
           <div className="glass-card space-y-3">
             <button onClick={() => setVerDias(v => !v)} className="w-full flex items-center justify-between">
-              <span className="text-white font-semibold text-sm">Por día · {MESES[mes]}</span>
+              <span className="text-white font-semibold text-sm">Por día · {periodoLabel}</span>
               {verDias ? <ChevronUp size={16} className="text-white/40" /> : <ChevronDown size={16} className="text-white/40" />}
             </button>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-2xl p-3 text-center" style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.10)'}}>
-                <p className="text-white/45 text-xs">Promedio por día</p>
-                <p className="text-white text-lg font-bold">${promedioDia.toFixed(2)}</p>
+            <div className="grid grid-cols-2 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
+              <div>
+                <p className="text-white/55 text-[12px] font-semibold">Promedio por día</p>
+                <p className="text-white text-lg font-extrabold mt-0.5">${promedioDia.toFixed(2)}</p>
               </div>
-              <div className="rounded-2xl p-3 text-center" style={{background:'rgba(124,192,147,0.10)', border:'1px solid rgba(124,192,147,0.20)'}}>
-                <p className="text-emerald-300/70 text-xs">Mejor día</p>
-                <p className="text-emerald-300 text-lg font-bold">${mejorDia ? mejorDia[1].totalUsd.toFixed(2) : '0.00'}</p>
-                {mejorDia && <p className="text-white/30 text-[10px]">{formatFecha(mejorDia[0])}</p>}
+              <div className="pl-4" style={{ borderLeft: '1px solid var(--line)' }}>
+                <p className="text-white/55 text-[12px] font-semibold">Mejor día</p>
+                <p className="text-amber-200 text-lg font-extrabold mt-0.5">${mejorDia ? mejorDia[1].totalUsd.toFixed(2) : '0.00'}</p>
+                {mejorDia && <p className="text-white/45 text-[11px]">{formatFecha(mejorDia[0])}</p>}
               </div>
             </div>
             {verDias && (
@@ -303,10 +331,10 @@ export default function Ingresos() {
         )}
 
         {/* Resumen por servicio */}
-        {ingresosMes.length > 0 && (
+        {ingresosPeriodo.length > 0 && (
           <div className="glass-card space-y-3">
             <button onClick={() => setVerResumen(v => !v)} className="w-full flex items-center justify-between">
-              <span className="text-white font-semibold text-sm">Por servicio · {MESES[mes]}</span>
+              <span className="text-white font-semibold text-sm">Por servicio · {periodoLabel}</span>
               {verResumen ? <ChevronUp size={16} className="text-white/40" /> : <ChevronDown size={16} className="text-white/40" />}
             </button>
             {verResumen && (
@@ -326,16 +354,16 @@ export default function Ingresos() {
         )}
 
         {/* Resumen por método de pago */}
-        {ingresosMes.length > 0 && (
+        {ingresosPeriodo.length > 0 && (
           <div className="glass-card space-y-3">
             <button onClick={() => setVerMetodos(v => !v)} className="w-full flex items-center justify-between">
-              <span className="text-white font-semibold text-sm">Por método de pago · {MESES[mes]}</span>
+              <span className="text-white font-semibold text-sm">Por método de pago · {periodoLabel}</span>
               {verMetodos ? <ChevronUp size={16} className="text-white/40" /> : <ChevronDown size={16} className="text-white/40" />}
             </button>
             {verMetodos && (
               <div className="space-y-3">
                 {resumenMetodos.map(([metodo, { count, totalUsd, esUsd }]) => {
-                  const pct = totalEnUsd > 0 ? (totalUsd / totalEnUsd) * 100 : 0
+                  const pct = combinado > 0 ? (totalUsd / combinado) * 100 : 0
                   return (
                     <div key={metodo} className="space-y-1">
                       <div className="flex items-center justify-between gap-3">
@@ -365,8 +393,8 @@ export default function Ingresos() {
                   )
                 })}
                 <div className="flex items-center justify-between pt-1 border-t" style={{borderColor:'rgba(255,255,255,0.08)'}}>
-                  <span className="text-white/35 text-xs">{ingresosMes.length} cobros en total</span>
-                  <span className="text-amber-300 text-xs font-semibold">${totalEnUsd.toFixed(2)} USD</span>
+                  <span className="text-white/45 text-xs">{ingresosPeriodo.length} cobros en total</span>
+                  <span className="text-amber-300 text-xs font-semibold">${combinado.toFixed(2)} USD</span>
                 </div>
               </div>
             )}
@@ -392,7 +420,7 @@ export default function Ingresos() {
         {filtrados.length === 0 ? (
           <div className="glass-card text-center py-12">
             <DollarSign size={32} className="text-white/20 mx-auto mb-3" />
-            <p className="text-white/35 text-sm mb-4">Sin ingresos en {MESES[mes]} {anio}</p>
+            <p className="text-white/55 text-sm mb-4">Sin ingresos en {vistaTotal === 'anio' ? anio : `${MESES[mes]} ${anio}`}</p>
             <div className="flex justify-center">
               <button onClick={() => navigate('/ingresos/nuevo')} className="glass-btn-primary" style={{width:'auto', padding:'10px 24px'}}>
                 Registrar ingreso

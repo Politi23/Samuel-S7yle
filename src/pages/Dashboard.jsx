@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { Users, Clock, Plus, ChevronRight, LogOut, UserPlus, CalendarDays, AlertTriangle, Search, X, BarChart2, CheckCircle2, Gift } from 'lucide-react'
 import { hoyVE, toFechaVE, ahoraVE } from '../lib/fecha'
 import Logo from '../components/Logo'
+import SemanaIngresos from '../components/SemanaIngresos'
 import { cumpleanosProximos, cuandoCumple } from '../lib/cumpleanos'
 
 const MOTIVOS_RAPIDOS = ['Corte de cabello','Corte + Barba','Cejas','Colorimetría','Pigmentación','Lavado','Otro']
@@ -248,6 +249,9 @@ export default function Dashboard() {
             </button>
           </div>
         </section>
+
+        {/* ── Esta semana ── */}
+        <SemanaIngresos ingresos={ingresos} hoyStr={hoyStr} onVer={() => navigate('/ingresos')} />
 
         {/* ── Resumen semanal ── */}
         {mostrarResumenSemanal && (
