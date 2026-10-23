@@ -3,6 +3,7 @@ import { Share2, Download, Copy, CheckCircle2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { useToast } from '../context/ToastContext'
 import { dibujarEstado } from '../lib/qrEstado'
+import { useMarcaCuenta } from '../lib/cuenta'
 
 export default function QrRegistro() {
   const toast = useToast()
@@ -10,10 +11,12 @@ export default function QrRegistro() {
   const [preview, setPreview] = useState(null)
   const [copiado, setCopiado] = useState(false)
 
-  const url = `${window.location.origin}/registro`
+  const marca = useMarcaCuenta()
+  const url = `${window.location.origin}/registro${marca || ''}`
   const textoCompartir = `💈 Regístrate como cliente de Samuel S7yle: ${url}`
 
   useEffect(() => {
+    if (marca === null) return // esperar a saber de qué cuenta es el link
     let cancelado = false
     ;(async () => {
       await document.fonts?.ready
@@ -22,7 +25,7 @@ export default function QrRegistro() {
       if (!cancelado) setPreview(canvas.toDataURL('image/png'))
     })().catch(() => toast('No se pudo generar el QR', 'error'))
     return () => { cancelado = true }
-  }, [url]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [url, marca]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const obtenerArchivo = () => new Promise(res =>
     canvasRef.current.toBlob(b => res(new File([b], 'registro-samuel-s7yle.png', { type: 'image/png' })), 'image/png'))

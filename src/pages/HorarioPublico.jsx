@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
+import { cuentaDelLink } from '../lib/cuenta'
 import { ordenarDesdeHoy, ordenarSlots, slotsVigentes, etiquetaDia, fechaDelDia, estaOcupado, yaPaso, fmtHora as fmt } from '../lib/horario'
 import { Clock, CheckCircle2, XCircle, AlertCircle, WifiOff } from 'lucide-react'
 
@@ -25,6 +26,24 @@ const WaIcon = () => (
   </svg>
 )
 
+/* Horario de la cuenta del link: un link de prueba (?b=) lee esa cuenta; sin marca,
+   la función de Supabase devuelve siempre el de Samuel. Si esa función todavía no
+   existe, se usa la forma anterior (la cuenta modificada más recientemente). */
+async function leerDisponibilidad() {
+  const cuenta = cuentaDelLink()
+  if (cuenta) {
+    const { data, error } = await supabase.from('disponibilidad').select('*').eq('user_id', cuenta)
+    if (error) throw error
+    return data
+  }
+  const { data, error } = await supabase.rpc('horario_publico')
+  if (!error) return data
+  const { data: todas, error: err } = await supabase
+    .from('disponibilidad').select('*').order('updated_at', { ascending: false })
+  if (err) throw err
+  return (todas || []).filter(d => d.user_id === todas[0]?.user_id)
+}
+
 export default function HorarioPublico() {
   const [dias, setDias]           = useState([])
   const [cargando, setCargando]   = useState(true)
@@ -34,18 +53,11 @@ export default function HorarioPublico() {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const { data, error: err } = await supabase
-          .from('disponibilidad')
-          .select('*')
-          .order('updated_at', { ascending: false })
-
-        if (err) throw err
+        const data = await leerDisponibilidad()
         if (!data || data.length === 0) { setCargando(false); return }
 
-        const barberId = data[0].user_id
         // La semana empieza hoy: Hoy, Mañana, …
         const filas = ordenarDesdeHoy(data
-          .filter(d => d.user_id === barberId)
           .map(d => ({ ...d, slots: ordenarSlots(Array.isArray(d.slots) ? d.slots : []) })))
         setDias(filas)
         const ts = filas.reduce((m, d) => (d.updated_at > (m || '') ? d.updated_at : m), null)

@@ -10,6 +10,7 @@ import {
   estaOcupado, marcarOcupado, aplicarCitas, libresDe, aMinutos, deMinutos,
 } from '../lib/horario'
 import { ahoraVE } from '../lib/fecha'
+import { useMarcaCuenta } from '../lib/cuenta'
 import {
   Share2, ExternalLink, Plus, Trash2, Pencil, Check,
   CheckCircle2, AlertCircle, Loader2, CalendarCheck,
@@ -113,7 +114,8 @@ export default function HorarioAdmin() {
   const pendientes  = useRef({})
   useEffect(() => { citasRef.current = citas }, [citas])
 
-  const urlPublica = `${window.location.origin}/horario`
+  const marca = useMarcaCuenta()
+  const urlPublica = `${window.location.origin}/horario${marca || ''}`
 
   /* ── guardado automático ───────────────────────────────────── */
   const guardarDia = useCallback(async (dia) => {
@@ -263,7 +265,7 @@ export default function HorarioAdmin() {
         title="Horario"
         action={
           <div className="flex gap-2">
-            <a href="/horario" target="_blank" rel="noopener noreferrer" aria-label="Ver página pública"
+            <a href={`/horario${marca || ''}`} target="_blank" rel="noopener noreferrer" aria-label="Ver página pública"
                className="glass-btn-icon w-10 h-10 flex items-center justify-center">
               <ExternalLink size={17} className="text-white/80" />
             </a>

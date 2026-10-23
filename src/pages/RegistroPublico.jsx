@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
+import { cuentaDelLink } from '../lib/cuenta'
 import { CheckCircle2, CalendarClock } from 'lucide-react'
 
 const PREFIJOS = ['0412', '0422', '0414', '0416', '0424', '0426']
@@ -70,6 +71,8 @@ export default function RegistroPublico() {
       p_apellido:         form.apellido.trim(),
       p_telefono:         `${form.tel_prefijo}-${form.tel_num}`,
       p_fecha_nacimiento: form.fecha_nacimiento || null,
+      // Solo los links de prueba llevan cuenta; sin ella se guarda en la de Samuel
+      ...(cuentaDelLink() ? { p_barbero: cuentaDelLink() } : {}),
     })
     setEnviando(false)
     if (error) {
@@ -132,7 +135,7 @@ export default function RegistroPublico() {
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-                <a href="/horario" className="glass-btn-primary" style={{ textDecoration: 'none' }}>
+                <a href={cuentaDelLink() ? `/horario?b=${cuentaDelLink()}` : "/horario"} className="glass-btn-primary" style={{ textDecoration: 'none' }}>
                   <CalendarClock size={18} />
                   Ver cupos disponibles
                 </a>
