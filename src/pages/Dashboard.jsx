@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { Users, Clock, Plus, ChevronRight, LogOut, UserPlus, CalendarDays, AlertTriangle, Search, X, BarChart2, CheckCircle2, Gift } from 'lucide-react'
 import { hoyVE, toFechaVE, ahoraVE } from '../lib/fecha'
 import Logo from '../components/Logo'
+import { cumpleanosProximos, cuandoCumple } from '../lib/cumpleanos'
 
 const MOTIVOS_RAPIDOS = ['Corte de cabello','Corte + Barba','Cejas','Colorimetría','Pigmentación','Lavado','Otro']
 
@@ -164,20 +165,10 @@ export default function Dashboard() {
   const fechaLargo = hoyDate.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'long' })
   const fechaLabel = fechaLargo.charAt(0).toUpperCase() + fechaLargo.slice(1)
 
-  // ── Cumpleaños próximos 7 días ──
-  const hoyMMDD = hoyStr.slice(5)
-  const cumpleHoy = clientes.filter(c => c.fecha_nacimiento && c.fecha_nacimiento.slice(5) === hoyMMDD)
-  const cumpleProximos = clientes.filter(c => {
-    if (!c.fecha_nacimiento) return false
-    const mmdd = c.fecha_nacimiento.slice(5)
-    if (mmdd === hoyMMDD) return false
-    for (let i = 1; i <= 7; i++) {
-      const d = new Date(hoyDate); d.setDate(hoyDate.getDate() + i)
-      const dStr = toFechaVE(d).slice(5)
-      if (mmdd === dStr) return true
-    }
-    return false
-  })
+  // ── Cumpleaños: hoy y próximos 7 días, del más cercano al más lejano ──
+  const cumples        = cumpleanosProximos(clientes, hoyStr, 7)
+  const cumpleHoy      = cumples.filter(x => x.enDias === 0)
+  const cumpleProximos = cumples.filter(x => x.enDias > 0)
 
   const saludo = (() => {
     const h = parseInt(ahoraVE().slice(0, 2))
@@ -293,7 +284,7 @@ export default function Dashboard() {
         )}
 
         {/* ── Cumpleaños ── */}
-        {cumpleHoy.map(c => (
+        {cumpleHoy.map(({ cliente: c, edad }) => (
           <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
                   className="glass-card w-full flex items-center gap-3 text-left active:opacity-80"
                   style={{ background: 'linear-gradient(180deg, rgba(201,162,74,0.16), rgba(201,162,74,0.07))', borderColor: 'rgba(201,162,74,0.35)' }}>
@@ -303,7 +294,10 @@ export default function Dashboard() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-amber-300 text-xs font-bold">Cumpleaños hoy · servicio gratis</p>
-              <p className="text-white font-bold truncate">{c.nombre} {c.apellido}</p>
+              <p className="text-white font-bold truncate">
+                {c.nombre} {c.apellido}
+                {edad ? <span className="text-white/55 font-semibold"> · {edad} años</span> : null}
+              </p>
             </div>
             <ChevronRight size={17} className="text-white/35" />
           </button>
@@ -312,20 +306,20 @@ export default function Dashboard() {
           <section className="glass-card">
             <div className="flex items-center gap-2 mb-1">
               <Gift size={15} className="text-amber-300" />
-              <h2 className="text-white text-[15px] font-bold">Cumpleaños esta semana</h2>
+              <h2 className="text-white text-[15px] font-bold">Cumpleaños próximos 7 días</h2>
             </div>
             <ul>
-              {cumpleProximos.map((c, idx) => {
-                const [, mm, dd] = c.fecha_nacimiento.split('-')
-                return (
-                  <li key={c.id} style={idx ? linea : undefined}>
-                    <button onClick={() => navigate(`/clientes/${c.id}`)} className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-70">
-                      <span className="text-white text-sm flex-1 truncate">{c.nombre} {c.apellido}</span>
-                      <span className="text-amber-300 text-xs font-bold">{dd}/{mm}</span>
-                    </button>
-                  </li>
-                )
-              })}
+              {cumpleProximos.map((x, idx) => (
+                <li key={x.cliente.id} style={idx ? linea : undefined}>
+                  <button onClick={() => navigate(`/clientes/${x.cliente.id}`)} className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-70">
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-white text-sm truncate">{x.cliente.nombre} {x.cliente.apellido}</span>
+                      {x.edad ? <span className="block text-white/50 text-xs">Cumple {x.edad}</span> : null}
+                    </span>
+                    <span className="text-amber-300 text-xs font-bold flex-shrink-0">{cuandoCumple(x)}</span>
+                  </button>
+                </li>
+              ))}
             </ul>
           </section>
         )}
