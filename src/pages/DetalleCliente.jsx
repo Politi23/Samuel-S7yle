@@ -450,8 +450,13 @@ export default function DetalleCliente() {
                 disabled={eliminando}
                 onClick={async () => {
                   setEliminando(true)
-                  try { await eliminarCliente(id) } catch {}
-                  navigate('/clientes', { replace: true })
+                  try {
+                    await eliminarCliente(id)
+                    navigate('/clientes', { replace: true })
+                  } catch {
+                    setEliminando(false)
+                    toast('No se pudo eliminar el cliente. Revisa la conexión.', 'error')
+                  }
                 }}
                 className="py-3 rounded-2xl text-white font-semibold text-sm transition-opacity"
                 style={{background:'rgba(239,68,68,0.55)', border:'1px solid rgba(239,68,68,0.50)', opacity: eliminando ? 0.6 : 1}}>

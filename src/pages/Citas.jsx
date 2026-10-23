@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import { Plus, Calendar, ChevronLeft, ChevronRight, Trash2, Edit2, CheckCircle2, DollarSign, CalendarPlus } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { hoyVE, toFechaVE, ahoraVE } from '../lib/fecha'
+import { useToast } from '../context/ToastContext'
 
 const DIAS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -68,6 +69,7 @@ function EstadoBadge({ cita, onCambiar }) {
 export default function Citas() {
   const { citas, eliminarCita, actualizarCita } = useApp()
   const navigate = useNavigate()
+  const toast = useToast()
   const hoyStr = hoyVE()
   const hoyDate = new Date(hoyStr + 'T12:00')
 
@@ -117,7 +119,9 @@ export default function Citas() {
     try {
       await actualizarCita(cita.id, { estado: nuevoEstado })
       if (nuevoEstado === 'atendida') setCobrarCita(cita)
-    } catch {}
+    } catch {
+      toast('No se pudo cambiar el estado de la cita. Revisa la conexión.', 'error')
+    }
   }
 
   const abrirReagendar = (cita) => {
@@ -396,7 +400,7 @@ export default function Citas() {
               <button disabled={eliminando}
                       onClick={async () => {
                         setEliminando(true)
-                        try { await eliminarCita(confirmar.id) } catch {}
+                        try { await eliminarCita(confirmar.id) } catch { toast('No se pudo eliminar la cita. Revisa la conexión.', 'error') }
                         setEliminando(false)
                         setConfirmar(null)
                       }}
