@@ -13,6 +13,9 @@ const PREFIJOS = [
   { valor: '0424', label: '0424 · Movistar' },
   { valor: '0426', label: '0426 · Movistar' },
 ]
+/* 0414-1234567, 04141234567 y +58 414 1234567 son el mismo número */
+const soloDigitos = (t) => (t || '').replace(/\D/g, '').replace(/^58(?=4)/, '0')
+
 const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '' }
 const DRAFT_KEY = 'draft_nuevo_cliente'
 
@@ -108,6 +111,7 @@ export default function NuevoCliente() {
     const camposTocados = [...campos, ...(form.tel_num.trim() ? ['tel_num'] : [])]
     setErrores(e); setTocados(Object.fromEntries(camposTocados.map(c => [c, true])))
     if (Object.values(e).some(v => v)) return
+    if (duplicado) return
     const telefono = form.tel_num.trim() ? `${form.tel_prefijo}-${form.tel_num.replace(/\D/g, '')}` : null
     const datos = { nombre: form.nombre.trim(), apellido: form.apellido.trim(), telefono, fecha_nacimiento: form.fecha_nacimiento || null }
     setGuardando(true)
@@ -128,6 +132,11 @@ export default function NuevoCliente() {
       setGuardando(false)
     }
   }
+
+  const telCompleto = form.tel_num.replace(/\D/g, '').length === 7 ? `${form.tel_prefijo}${form.tel_num.replace(/\D/g, '')}` : null
+  const duplicado = telCompleto
+    ? clientes.find(c => c.id !== id && soloDigitos(c.telefono) === telCompleto)
+    : null
 
   const err = (c) => errores[c] && tocados[c]
   const cls = (c) => `glass-input${err(c) ? ' error' : ''}`
@@ -168,21 +177,30 @@ export default function NuevoCliente() {
                 {PREFIJOS.map(p => <option key={p.valor} value={p.valor}>{p.label}</option>)}
               </select>
               <input type="tel" inputMode="numeric"
-                     className={`glass-input flex-1${err('tel_num') ? ' error' : ''}`}
+                     className={`glass-input flex-1${err('tel_num') || duplicado ? ' error' : ''}`}
                      value={form.tel_num}
                      onChange={e => set('tel_num', e.target.value.replace(/\D/g,'').slice(0,7))}
                      onBlur={() => tocar('tel_num')} onPaste={onPasteTel}
                      placeholder="1234567" maxLength={7} />
             </div>
             {err('tel_num') && <p className="text-red-400 text-xs mt-1">{errores.tel_num}</p>}
-            {!err('tel_num') && form.tel_num.replace(/\D/g,'').length === 7 && (
+            {!err('tel_num') && duplicado && (
+              <div className="mt-1.5 flex items-center justify-between gap-2" role="alert">
+                <p className="text-red-300 text-xs">Ese número ya es de {duplicado.nombre} {duplicado.apellido}</p>
+                <button type="button" onClick={() => navigate(`/clientes/${duplicado.id}`)}
+                        className="text-amber-300 text-xs font-bold underline underline-offset-2 flex-shrink-0 min-h-[32px]">
+                  Ver cliente
+                </button>
+              </div>
+            )}
+            {!err('tel_num') && !duplicado && telCompleto && (
               <p className="text-emerald-400 text-xs mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> Válido</p>
             )}
           </div>
         </div>
 
         {errorGuardar && <p className="text-red-400 text-sm text-center">{errorGuardar}</p>}
-        <button onClick={guardar} disabled={guardando} className="glass-btn-primary" style={guardando ? {opacity:0.6} : {}}>
+        <button onClick={guardar} disabled={guardando || !!duplicado} className="glass-btn-primary" style={guardando || duplicado ? {opacity:0.6} : {}}>
           <Save size={18} />
           {guardando ? 'Guardando…' : esEdicion ? 'Guardar cambios' : 'Registrar cliente'}
         </button>
