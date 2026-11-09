@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
 import { cuentaDelLink } from '../lib/cuenta'
-import { CheckCircle2, CalendarClock } from 'lucide-react'
+import { CheckCircle2, CalendarClock, Info } from 'lucide-react'
 
 const PREFIJOS = ['0412', '0422', '0414', '0416', '0424', '0426']
 const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '', website: '' }
@@ -33,6 +33,7 @@ export default function RegistroPublico() {
   const [enviando, setEnviando] = useState(false)
   const [errorEnvio, setErrorEnvio] = useState('')
   const [resultado, setResultado]   = useState(null) // 'creado' | 'existe'
+  const enviandoRef = useRef(false)
 
   const set = (c, v) => {
     setForm(prev => ({ ...prev, [c]: v }))
@@ -64,6 +65,8 @@ export default function RegistroPublico() {
     // Campo trampa: solo los bots lo llenan
     if (form.website) { setResultado('creado'); return }
 
+    if (enviandoRef.current) return
+    enviandoRef.current = true
     setEnviando(true)
     setErrorEnvio('')
     const { data, error } = await supabase.rpc('registrar_cliente_publico', {
@@ -74,6 +77,7 @@ export default function RegistroPublico() {
       // Solo los links de prueba llevan cuenta; sin ella se guarda en la de Samuel
       ...(cuentaDelLink() ? { p_barbero: cuentaDelLink() } : {}),
     })
+    enviandoRef.current = false
     setEnviando(false)
     if (error) {
       setErrorEnvio(error.message?.includes('inválid') || error.message?.includes('Demasiados')
@@ -120,19 +124,28 @@ export default function RegistroPublico() {
               <div style={{
                 width: 56, height: 56, borderRadius: 16,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(124,192,147,0.14)', border: '1px solid rgba(124,192,147,0.30)',
+                background: resultado === 'existe' ? 'rgba(201,162,74,0.14)' : 'rgba(124,192,147,0.14)',
+                border: `1px solid ${resultado === 'existe' ? 'rgba(201,162,74,0.35)' : 'rgba(124,192,147,0.30)'}`,
               }}>
-                <CheckCircle2 size={28} color="#7cc093" />
+                {resultado === 'existe'
+                  ? <Info size={28} color="#e2c98a" />
+                  : <CheckCircle2 size={28} color="#7cc093" />}
               </div>
               <div>
                 <p style={{ margin: 0, color: '#fff', fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em' }}>
-                  {resultado === 'existe' ? `${nombreCorto}, ya estabas registrado` : `¡Listo, ${nombreCorto}!`}
+                  {resultado === 'existe' ? 'Ese número ya está registrado' : `¡Listo, ${nombreCorto}!`}
                 </p>
-                <p style={{ margin: '8px 0 0', color: 'rgba(255,255,255,0.50)', fontSize: 14, lineHeight: 1.5 }}>
+                <p style={{ margin: '8px 0 0', color: 'rgba(255,255,255,0.60)', fontSize: 14, lineHeight: 1.5 }}>
                   {resultado === 'existe'
-                    ? 'Tus datos ya estaban guardados. Ahora puedes apartar tu cupo.'
+                    ? `El ${form.tel_prefijo}-${form.tel_num} ya está en la lista de Samuel, así que no se registró otra vez. Si es tu número, ya puedes apartar tu cupo.`
                     : 'Ya quedaste registrado. Ahora puedes apartar tu cupo.'}
                 </p>
+                {resultado === 'existe' && (
+                  <button onClick={() => setResultado(null)}
+                          style={{ marginTop: 10, background: 'none', border: 'none', color: '#e2c98a', fontSize: 14, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 4, cursor: 'pointer', minHeight: 40 }}>
+                    No es mi número, corregirlo
+                  </button>
+                )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                 <a href={cuentaDelLink() ? `/horario?b=${cuentaDelLink()}` : "/horario"} className="glass-btn-primary" style={{ textDecoration: 'none' }}>

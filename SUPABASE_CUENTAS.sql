@@ -34,6 +34,15 @@ $$;
 REVOKE ALL ON FUNCTION horario_publico(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION horario_publico(UUID) TO anon, authenticated;
 
+-- Teléfono reducido a sus dígitos, con el +58 cambiado por 0
+CREATE OR REPLACE FUNCTION solo_digitos(t TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT regexp_replace(regexp_replace(coalesce(t, ''), '\D', '', 'g'), '^58(4)', '0\1')
+$$;
+
 -- 3. Registro por QR: igual que antes, pero guarda en la cuenta del link
 DROP FUNCTION IF EXISTS registrar_cliente_publico(TEXT, TEXT, TEXT, DATE);
 
@@ -73,8 +82,14 @@ BEGIN
     RAISE EXCEPTION 'Fecha de nacimiento inválida';
   END IF;
 
-  -- Si ya está registrado con ese teléfono, no duplicar
-  IF EXISTS (SELECT 1 FROM clientes c WHERE c.user_id = uid AND c.telefono = v_telefono) THEN
+  -- Un registro a la vez por número: si llegan dos iguales al mismo tiempo
+  -- (doble toque), el segundo espera y ve que el primero ya lo guardó
+  PERFORM pg_advisory_xact_lock(hashtextextended(uid::text || ':' || solo_digitos(v_telefono), 0));
+
+  -- Si ya está registrado con ese número, no duplicar (compara solo los
+  -- dígitos: 0414-1234567, 04141234567 y +58 414 1234567 son el mismo)
+  IF EXISTS (SELECT 1 FROM clientes c
+             WHERE c.user_id = uid AND solo_digitos(c.telefono) = solo_digitos(v_telefono)) THEN
     RETURN 'existe';
   END IF;
 
