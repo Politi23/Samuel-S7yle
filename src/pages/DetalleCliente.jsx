@@ -144,6 +144,17 @@ export default function DetalleCliente() {
   const familia = cliente.telefono
     ? clientes.filter(c => c.id !== cliente.id && digitos(c.telefono) === digitos(cliente.telefono))
     : []
+  // El titular del número es el primero que se registró sin parentesco. Los demás sin
+  // parentesco (registros de antes de que existiera) quedan "sin definir".
+  const dueno = [cliente, ...familia]
+    .filter(c => !c.parentesco)
+    .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))[0] || null
+  const sinDefinir = (c) => !c.parentesco && dueno && c.id !== dueno.id
+  const papelEnFamilia = (c) => {
+    const corto = parentescoCorto(c)
+    if (corto) return corto.charAt(0).toUpperCase() + corto.slice(1)
+    return sinDefinir(c) ? 'Sin definir' : 'Titular'
+  }
 
   const totalUSD = historial.filter(i => i.moneda === 'USD').reduce((a, i) => a + Number(i.monto), 0)
   const totalBs  = historial.filter(i => i.moneda === 'Bs').reduce((a, i) => a + Number(i.monto), 0)
@@ -177,6 +188,19 @@ export default function DetalleCliente() {
           </div>
           <div className="text-center">
             <h2 className="text-white text-lg font-bold">{cliente.nombre} {cliente.apellido}</h2>
+            {sinDefinir(cliente) && (
+              <div className="mt-3 rounded-[12px] px-3 py-2.5 text-left"
+                   style={{ background: 'rgba(201,162,74,0.10)', border: '1px solid rgba(201,162,74,0.30)' }}>
+                <p className="text-white/80 text-xs leading-relaxed">
+                  Este número ya es de <span className="text-white font-semibold">{dueno.nombre} {dueno.apellido}</span>.
+                  ¿{cliente.nombre} es su hijo, hija o familiar?
+                </p>
+                <button onClick={() => navigate(`/clientes/${id}/editar`)}
+                        className="mt-1 text-amber-300 text-xs font-bold underline underline-offset-2 min-h-[32px]">
+                  Indicarlo
+                </button>
+              </div>
+            )}
             {etiquetaParentesco(cliente) && (
               <p className="text-amber-300 text-sm font-semibold mt-0.5">{etiquetaParentesco(cliente)}</p>
             )}
@@ -230,8 +254,8 @@ export default function DetalleCliente() {
                 <li key={f.id} style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
                   <button onClick={() => navigate(`/clientes/${f.id}`)} className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-70">
                     <span className="flex-1 min-w-0 text-white text-sm font-semibold truncate">{f.nombre} {f.apellido}</span>
-                    <span className="text-amber-300/90 text-xs font-semibold flex-shrink-0">
-                      {parentescoCorto(f) ? parentescoCorto(f).charAt(0).toUpperCase() + parentescoCorto(f).slice(1) : 'Titular'}
+                    <span className={`${sinDefinir(f) ? 'text-white/45' : 'text-amber-300/90'} text-xs font-semibold flex-shrink-0`}>
+                      {papelEnFamilia(f)}
                     </span>
                   </button>
                 </li>
