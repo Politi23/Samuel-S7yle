@@ -112,6 +112,13 @@ export default function RegistroPublico() {
         : 'No se pudo completar el registro. Intenta de nuevo.')
       return
     }
+    if (data === 'numero_con_dueno') {
+      // Se queda en el formulario y explica qué hacer
+      setTocados(t => ({ ...t, tel_num: true }))
+      setErrores(e => ({ ...e, tel_num: 'Ese número ya está registrado' }))
+      setErrorEnvio('Si eres tú, ya puedes apartar tu cupo. Si eres otra persona de la familia, elige arriba "Mi hijo", "Mi hija" u "Otro familiar".')
+      return
+    }
     setResultado(data === 'existe' ? 'existe' : 'creado')
   }
 

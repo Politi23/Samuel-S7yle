@@ -114,7 +114,7 @@ export default function NuevoCliente() {
     const camposTocados = [...campos, ...(form.tel_num.trim() ? ['tel_num'] : [])]
     setErrores(e); setTocados(Object.fromEntries(camposTocados.map(c => [c, true])))
     if (Object.values(e).some(v => v)) return
-    if (duplicado) return
+    if (duplicado || otroTitular) return
     const telefono = form.tel_num.trim() ? `${form.tel_prefijo}-${form.tel_num.replace(/\D/g, '')}` : null
     const datos = { nombre: form.nombre.trim(), apellido: form.apellido.trim(), telefono, fecha_nacimiento: form.fecha_nacimiento || null }
     // El parentesco solo se envía si se usa (así guardar sigue funcionando aunque falte el SQL de familia)
@@ -148,6 +148,12 @@ export default function NuevoCliente() {
     : []
   const duplicado = mismoNumero.find(c => nombreNormal(c.nombre, c.apellido) === nombreNormal(form.nombre, form.apellido)) || null
   const familiar  = duplicado ? null : mismoNumero[0] || null
+  // Un solo titular por número: si ya tiene uno, otra persona debe ser hijo, hija o familiar
+  // (al editar, solo si le cambian el número: así los datos viejos con varios titulares se pueden seguir editando)
+  const numeroOriginal = esEdicion ? soloDigitos(clientes.find(c => c.id === id)?.telefono) : null
+  const otroTitular = !duplicado && !form.parentesco && (!esEdicion || numeroOriginal !== telCompleto)
+    ? mismoNumero.find(c => !c.parentesco) || null
+    : null
 
   const err = (c) => errores[c] && tocados[c]
   const cls = (c) => `glass-input${err(c) ? ' error' : ''}`
@@ -231,13 +237,24 @@ export default function NuevoCliente() {
                 </button>
               </div>
             )}
-            {!err('tel_num') && familiar && (
+            {!err('tel_num') && otroTitular && (
+              <div className="mt-1.5 space-y-1" role="alert">
+                <p className="text-red-300 text-xs">
+                  Este número ya es de {otroTitular.nombre} {otroTitular.apellido}. Si es otra persona de su familia, márcala arriba como Hijo, Hija o Familiar.
+                </p>
+                <button type="button" onClick={() => navigate(`/clientes/${otroTitular.id}`)}
+                        className="text-amber-300 text-xs font-bold underline underline-offset-2 min-h-[32px]">
+                  Ver a {otroTitular.nombre}
+                </button>
+              </div>
+            )}
+            {!err('tel_num') && familiar && !otroTitular && (
               <p className="text-amber-200/90 text-xs mt-1.5">
                 Este número también es de {familiar.nombre} {familiar.apellido}
                 {mismoNumero.length > 1 ? ` y ${mismoNumero.length - 1} más` : ''}. Si es un familiar, puedes guardarlo igual.
               </p>
             )}
-            {!err('tel_num') && !duplicado && !familiar && telCompleto && (
+            {!err('tel_num') && !duplicado && !familiar && !otroTitular && telCompleto && (
               <p className="text-emerald-400 text-xs mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> Válido</p>
             )}
             {!telCompleto && !esEdicion && (
@@ -247,7 +264,7 @@ export default function NuevoCliente() {
         </div>
 
         {errorGuardar && <p className="text-red-400 text-sm text-center">{errorGuardar}</p>}
-        <button onClick={guardar} disabled={guardando || !!duplicado} className="glass-btn-primary" style={guardando || duplicado ? {opacity:0.6} : {}}>
+        <button onClick={guardar} disabled={guardando || !!duplicado || !!otroTitular} className="glass-btn-primary" style={guardando || duplicado || otroTitular ? {opacity:0.6} : {}}>
           <Save size={18} />
           {guardando ? 'Guardando…' : esEdicion ? 'Guardar cambios' : 'Registrar cliente'}
         </button>

@@ -127,6 +127,17 @@ BEGIN
     RETURN 'existe';
   END IF;
 
+  -- Cada número tiene un solo dueño (quien se registró "para mí"). Si ya
+  -- tiene dueño y alguien más se registra "para mí" con otro nombre (o con
+  -- el suyo mal escrito), no se crea: debe elegir hijo, hija o familiar.
+  IF v_parentesco IS NULL AND EXISTS (
+       SELECT 1 FROM clientes c
+       WHERE c.user_id = uid
+         AND solo_digitos(c.telefono) = solo_digitos(v_telefono)
+         AND c.parentesco IS NULL) THEN
+    RETURN 'numero_con_dueno';
+  END IF;
+
   -- Freno contra abuso: máximo 30 registros por QR cada 10 minutos
   IF (SELECT count(*) FROM clientes c
       WHERE c.user_id = uid AND c.origen = 'qr' AND c.created_at > now() - INTERVAL '10 minutes') >= 30 THEN
