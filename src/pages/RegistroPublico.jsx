@@ -91,6 +91,15 @@ export default function RegistroPublico() {
   const err = (c) => tocados[c] && errores[c]
   const nombreCorto = form.nombre.trim().split(/\s+/)[0]
 
+  // Deja el mismo WhatsApp y limpia los datos de la persona (para registrar a un hijo o hermano)
+  const otraPersona = () => {
+    setForm(f => ({ ...FORM_INICIAL, tel_prefijo: f.tel_prefijo, tel_num: f.tel_num }))
+    setErrores({})
+    setTocados({})
+    setErrorEnvio('')
+    setResultado(null)
+  }
+
   return (
     <>
       <style>{`@media (prefers-reduced-motion: reduce) { .orb { animation: none !important; } }`}</style>
@@ -133,19 +142,17 @@ export default function RegistroPublico() {
               </div>
               <div>
                 <p style={{ margin: 0, color: '#fff', fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em' }}>
-                  {resultado === 'existe' ? 'Ese número ya está registrado' : `¡Listo, ${nombreCorto}!`}
+                  {resultado === 'existe' ? `${nombreCorto}, ya estás registrado` : `¡Listo, ${nombreCorto}!`}
                 </p>
                 <p style={{ margin: '8px 0 0', color: 'rgba(255,255,255,0.60)', fontSize: 14, lineHeight: 1.5 }}>
                   {resultado === 'existe'
-                    ? `El ${form.tel_prefijo}-${form.tel_num} ya está en la lista de Samuel, así que no se registró otra vez. Si es tu número, ya puedes apartar tu cupo.`
+                    ? `${form.nombre.trim()} ${form.apellido.trim()} ya está en la lista de Samuel con el ${form.tel_prefijo}-${form.tel_num}, así que no se registró otra vez. Ya puedes apartar tu cupo.`
                     : 'Ya quedaste registrado. Ahora puedes apartar tu cupo.'}
                 </p>
-                {resultado === 'existe' && (
-                  <button onClick={() => setResultado(null)}
-                          style={{ marginTop: 10, background: 'none', border: 'none', color: '#e2c98a', fontSize: 14, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 4, cursor: 'pointer', minHeight: 40 }}>
-                    No es mi número, corregirlo
-                  </button>
-                )}
+                <button onClick={otraPersona}
+                        style={{ marginTop: 10, background: 'none', border: 'none', color: '#e2c98a', fontSize: 14, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 4, cursor: 'pointer', minHeight: 40 }}>
+                  Registrar a otra persona con este número
+                </button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                 <a href={cuentaDelLink() ? `/horario?b=${cuentaDelLink()}` : "/horario"} className="glass-btn-primary" style={{ textDecoration: 'none' }}>
@@ -197,7 +204,9 @@ export default function RegistroPublico() {
                          onChange={e => set('tel_num', e.target.value.replace(/\D/g, '').slice(0, 7))}
                          onBlur={() => tocar('tel_num')} onPaste={onPasteTel} />
                 </div>
-                {err('tel_num') && <p className="text-red-400 text-xs mt-1">{errores.tel_num}</p>}
+                {err('tel_num')
+                  ? <p className="text-red-400 text-xs mt-1">{errores.tel_num}</p>
+                  : <p className="text-white/45 text-xs mt-1.5">¿Es para un niño? Pon el WhatsApp de su papá o mamá.</p>}
               </div>
 
               <div>

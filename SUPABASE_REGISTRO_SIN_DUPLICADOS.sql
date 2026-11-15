@@ -1,9 +1,22 @@
 -- ================================================================
--- Registro por QR: no permitir el mismo número dos veces
+-- Registro por QR: no permitir a la misma persona dos veces
 -- Ejecutar en: Supabase Dashboard → SQL Editor (todo de una vez)
 -- ================================================================
--- - Compara solo los dígitos del teléfono (sin guiones, espacios ni +58).
+-- - Bloquea si el mismo número Y el mismo nombre ya están registrados.
+-- - Permite el mismo número con otro nombre (papá e hijos, hermanos).
+-- - Compara solo los dígitos del teléfono (sin guiones, espacios ni +58)
+--   y el nombre sin mayúsculas ni acentos.
 -- - Si llegan dos registros del mismo número al mismo tiempo, solo uno se guarda.
+
+-- Nombre completo sin mayúsculas, acentos ni espacios de más
+CREATE OR REPLACE FUNCTION nombre_normal(n TEXT, a TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT btrim(regexp_replace(lower(translate(coalesce(n, '') || ' ' || coalesce(a, ''),
+                                             'ÁÉÍÓÚÜÑáéíóúüñ', 'AEIOUUNaeiouun')), '\s+', ' ', 'g'))
+$$;
 
 -- Teléfono reducido a sus dígitos, con el +58 cambiado por 0
 CREATE OR REPLACE FUNCTION solo_digitos(t TEXT)
@@ -55,10 +68,14 @@ BEGIN
   -- (doble toque), el segundo espera y ve que el primero ya lo guardó
   PERFORM pg_advisory_xact_lock(hashtextextended(uid::text || ':' || solo_digitos(v_telefono), 0));
 
-  -- Si ya está registrado con ese número, no duplicar (compara solo los
-  -- dígitos: 0414-1234567, 04141234567 y +58 414 1234567 son el mismo)
+  -- Si esa misma persona ya está registrada con ese número, no duplicar.
+  -- Un mismo número sí puede tener varias personas (papá e hijos, hermanos).
+  -- Compara solo los dígitos del número (0414-1234567 = +58 414 1234567) y el
+  -- nombre sin mayúsculas ni acentos (José Pérez = jose perez).
   IF EXISTS (SELECT 1 FROM clientes c
-             WHERE c.user_id = uid AND solo_digitos(c.telefono) = solo_digitos(v_telefono)) THEN
+             WHERE c.user_id = uid
+               AND solo_digitos(c.telefono) = solo_digitos(v_telefono)
+               AND nombre_normal(c.nombre, c.apellido) = nombre_normal(v_nombre, v_apellido)) THEN
     RETURN 'existe';
   END IF;
 

@@ -15,6 +15,8 @@ const PREFIJOS = [
 ]
 /* 0414-1234567, 04141234567 y +58 414 1234567 son el mismo número */
 const soloDigitos = (t) => (t || '').replace(/\D/g, '').replace(/^58(?=4)/, '0')
+/* "José  Pérez" y "jose perez" son el mismo nombre */
+const nombreNormal = (n, a) => `${n || ''} ${a || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '' }
 const DRAFT_KEY = 'draft_nuevo_cliente'
@@ -134,9 +136,11 @@ export default function NuevoCliente() {
   }
 
   const telCompleto = form.tel_num.replace(/\D/g, '').length === 7 ? `${form.tel_prefijo}${form.tel_num.replace(/\D/g, '')}` : null
-  const duplicado = telCompleto
-    ? clientes.find(c => c.id !== id && soloDigitos(c.telefono) === telCompleto)
-    : null
+  const mismoNumero = telCompleto
+    ? clientes.filter(c => c.id !== id && soloDigitos(c.telefono) === telCompleto)
+    : []
+  const duplicado = mismoNumero.find(c => nombreNormal(c.nombre, c.apellido) === nombreNormal(form.nombre, form.apellido)) || null
+  const familiar  = duplicado ? null : mismoNumero[0] || null
 
   const err = (c) => errores[c] && tocados[c]
   const cls = (c) => `glass-input${err(c) ? ' error' : ''}`
@@ -186,15 +190,24 @@ export default function NuevoCliente() {
             {err('tel_num') && <p className="text-red-400 text-xs mt-1">{errores.tel_num}</p>}
             {!err('tel_num') && duplicado && (
               <div className="mt-1.5 flex items-center justify-between gap-2" role="alert">
-                <p className="text-red-300 text-xs">Ese número ya es de {duplicado.nombre} {duplicado.apellido}</p>
+                <p className="text-red-300 text-xs">{duplicado.nombre} {duplicado.apellido} ya está registrado con este número</p>
                 <button type="button" onClick={() => navigate(`/clientes/${duplicado.id}`)}
                         className="text-amber-300 text-xs font-bold underline underline-offset-2 flex-shrink-0 min-h-[32px]">
                   Ver cliente
                 </button>
               </div>
             )}
-            {!err('tel_num') && !duplicado && telCompleto && (
+            {!err('tel_num') && familiar && (
+              <p className="text-amber-200/90 text-xs mt-1.5">
+                Este número también es de {familiar.nombre} {familiar.apellido}
+                {mismoNumero.length > 1 ? ` y ${mismoNumero.length - 1} más` : ''}. Si es un familiar, puedes guardarlo igual.
+              </p>
+            )}
+            {!err('tel_num') && !duplicado && !familiar && telCompleto && (
               <p className="text-emerald-400 text-xs mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> Válido</p>
+            )}
+            {!telCompleto && !esEdicion && (
+              <p className="text-white/45 text-xs mt-1.5">Si es un niño sin teléfono, puedes dejarlo vacío o poner el de su papá o mamá.</p>
             )}
           </div>
         </div>
