@@ -1,3 +1,6 @@
+-- VERSIÓN ANTERIOR: ya no hace falta correr este archivo.
+-- La versión vigente del registro está en SUPABASE_FAMILIA.sql.
+
 -- ================================================================
 -- Registro por QR: no permitir a la misma persona dos veces
 -- Ejecutar en: Supabase Dashboard → SQL Editor (todo de una vez)

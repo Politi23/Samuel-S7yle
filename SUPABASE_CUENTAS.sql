@@ -5,6 +5,11 @@
 -- /horario y /registro sin marca  → cuenta de Samuel (ss7barbershop@gmail.com)
 -- /horario?b=<id> y /registro?b=<id> → esa cuenta (por ejemplo la de pruebas)
 
+-- 0. Parentesco: para quién es el registro y quién es su papá/mamá
+--    parentesco: NULL = la persona dueña del número; 'hijo', 'hija' o 'familiar'
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS parentesco    TEXT;
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS representante TEXT;
+
 -- 1. ¿Qué cuenta usa un link? La que pide (si existe) o la de Samuel
 CREATE OR REPLACE FUNCTION cuenta_publica(p_barbero UUID DEFAULT NULL)
 RETURNS UUID
@@ -55,13 +60,16 @@ $$;
 
 -- 3. Registro por QR: igual que antes, pero guarda en la cuenta del link
 DROP FUNCTION IF EXISTS registrar_cliente_publico(TEXT, TEXT, TEXT, DATE);
+DROP FUNCTION IF EXISTS registrar_cliente_publico(TEXT, TEXT, TEXT, DATE, UUID);
 
 CREATE OR REPLACE FUNCTION registrar_cliente_publico(
   p_nombre           TEXT,
   p_apellido         TEXT,
   p_telefono         TEXT,
   p_fecha_nacimiento DATE DEFAULT NULL,
-  p_barbero          UUID DEFAULT NULL
+  p_barbero          UUID DEFAULT NULL,
+  p_parentesco       TEXT DEFAULT NULL,
+  p_representante    TEXT DEFAULT NULL
 ) RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -72,6 +80,8 @@ DECLARE
   v_nombre   TEXT := initcap(btrim(p_nombre));
   v_apellido TEXT := initcap(btrim(p_apellido));
   v_telefono TEXT := btrim(p_telefono);
+  v_parentesco    TEXT := nullif(lower(btrim(coalesce(p_parentesco, ''))), '');
+  v_representante TEXT := initcap(btrim(coalesce(p_representante, '')));
 BEGIN
   IF uid IS NULL THEN
     RAISE EXCEPTION 'Registro no disponible';
@@ -90,6 +100,14 @@ BEGIN
   IF p_fecha_nacimiento IS NOT NULL
      AND (p_fecha_nacimiento > current_date OR p_fecha_nacimiento < current_date - INTERVAL '110 years') THEN
     RAISE EXCEPTION 'Fecha de nacimiento inválida';
+  END IF;
+  IF v_parentesco IS NOT NULL AND v_parentesco NOT IN ('hijo', 'hija', 'familiar') THEN
+    RAISE EXCEPTION 'Parentesco inválido';
+  END IF;
+  IF v_parentesco IS NULL THEN
+    v_representante := NULL;
+  ELSIF v_representante !~ '^[[:alpha:] ''-]{2,80}$' THEN
+    RAISE EXCEPTION 'Nombre del papá o mamá inválido';
   END IF;
 
   -- Un registro a la vez por número: si llegan dos iguales al mismo tiempo
@@ -113,11 +131,11 @@ BEGIN
     RAISE EXCEPTION 'Demasiados registros, intenta en unos minutos';
   END IF;
 
-  INSERT INTO clientes (user_id, nombre, apellido, telefono, fecha_nacimiento, origen)
-  VALUES (uid, v_nombre, v_apellido, v_telefono, p_fecha_nacimiento, 'qr');
+  INSERT INTO clientes (user_id, nombre, apellido, telefono, fecha_nacimiento, origen, parentesco, representante)
+  VALUES (uid, v_nombre, v_apellido, v_telefono, p_fecha_nacimiento, 'qr', v_parentesco, v_representante);
 
   RETURN 'creado';
 END $$;
 
-REVOKE ALL ON FUNCTION registrar_cliente_publico(TEXT, TEXT, TEXT, DATE, UUID) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION registrar_cliente_publico(TEXT, TEXT, TEXT, DATE, UUID) TO anon, authenticated;
+REVOKE ALL ON FUNCTION registrar_cliente_publico(TEXT, TEXT, TEXT, DATE, UUID, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION registrar_cliente_publico(TEXT, TEXT, TEXT, DATE, UUID, TEXT, TEXT) TO anon, authenticated;

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../context/ToastContext'
 import { Edit2, Trash2, Plus, Phone, Calendar, Clock, Copy, Check, MessageCircle, CalendarPlus, Camera, X, Gift, Star } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import { etiquetaParentesco, parentescoCorto } from '../lib/parentesco'
 import { hoyVE } from '../lib/fecha'
 
 function formatFecha(isoStr) {
@@ -139,6 +140,11 @@ export default function DetalleCliente() {
     .filter(c => c.cliente_id === id && c.fecha >= hoyStr && (c.estado === 'pendiente' || !c.estado))
     .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora||'').localeCompare(b.hora||''))[0] || null
 
+  const digitos = (t) => (t || '').replace(/\D/g, '').replace(/^58(?=4)/, '0')
+  const familia = cliente.telefono
+    ? clientes.filter(c => c.id !== cliente.id && digitos(c.telefono) === digitos(cliente.telefono))
+    : []
+
   const totalUSD = historial.filter(i => i.moneda === 'USD').reduce((a, i) => a + Number(i.monto), 0)
   const totalBs  = historial.filter(i => i.moneda === 'Bs').reduce((a, i) => a + Number(i.monto), 0)
 
@@ -171,12 +177,15 @@ export default function DetalleCliente() {
           </div>
           <div className="text-center">
             <h2 className="text-white text-lg font-bold">{cliente.nombre} {cliente.apellido}</h2>
+            {etiquetaParentesco(cliente) && (
+              <p className="text-amber-300 text-sm font-semibold mt-0.5">{etiquetaParentesco(cliente)}</p>
+            )}
 
             {esCumpleHoy && (
               <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-2xl"
-                   style={{background:'rgba(236,72,153,0.20)', border:'1px solid rgba(236,72,153,0.40)'}}>
-                <Gift size={12} className="text-pink-300" />
-                <span className="text-pink-200 text-xs font-semibold">Cumpleanos hoy · Servicio gratis</span>
+                   style={{background:'rgba(201,162,74,0.16)', border:'1px solid rgba(201,162,74,0.40)'}}>
+                <Gift size={12} className="text-amber-300" />
+                <span className="text-amber-200 text-xs font-semibold">Cumpleaños hoy · Servicio gratis</span>
               </div>
             )}
             {cliente.telefono && (
@@ -199,7 +208,7 @@ export default function DetalleCliente() {
             <div className="flex items-center justify-center gap-4 mt-3">
               {fecNacLabel && (
                 <div className="flex items-center gap-1.5">
-                  <Gift size={12} className="text-violet-300" />
+                  <Gift size={12} className="text-amber-300" />
                   <span className="text-white/50 text-xs">{fecNacLabel}{edad !== null ? ` · ${edad} años` : ''}</span>
                 </div>
               )}
@@ -210,6 +219,26 @@ export default function DetalleCliente() {
             </div>
           </div>
         </div>
+
+        {/* Familia: otros clientes con el mismo número */}
+        {familia.length > 0 && (
+          <section className="glass-card">
+            <h3 className="text-white text-[15px] font-bold">Familia</h3>
+            <p className="text-white/50 text-xs mt-0.5">Comparten el número {formatTel(cliente.telefono)}</p>
+            <ul className="mt-2">
+              {familia.map((f, idx) => (
+                <li key={f.id} style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
+                  <button onClick={() => navigate(`/clientes/${f.id}`)} className="w-full flex items-center gap-3 py-2.5 text-left active:opacity-70">
+                    <span className="flex-1 min-w-0 text-white text-sm font-semibold truncate">{f.nombre} {f.apellido}</span>
+                    <span className="text-amber-300/90 text-xs font-semibold flex-shrink-0">
+                      {parentescoCorto(f) ? parentescoCorto(f).charAt(0).toUpperCase() + parentescoCorto(f).slice(1) : 'Titular'}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* Próxima cita */}
         {proximaCita ? (

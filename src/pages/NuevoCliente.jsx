@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { Save, CheckCircle2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import { PARENTESCOS } from '../lib/parentesco'
 
 const PREFIJOS = [
   { valor: '0412', label: '0412 · Digitel' },
@@ -18,7 +19,7 @@ const soloDigitos = (t) => (t || '').replace(/\D/g, '').replace(/^58(?=4)/, '0')
 /* "José  Pérez" y "jose perez" son el mismo nombre */
 const nombreNormal = (n, a) => `${n || ''} ${a || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
-const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '' }
+const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '', parentesco: '', representante: '' }
 const DRAFT_KEY = 'draft_nuevo_cliente'
 
 function validarNombre(v) {
@@ -69,7 +70,7 @@ export default function NuevoCliente() {
         const tel = c.telefono || ''
         const prefijo = PREFIJOS.find(p => tel.startsWith(p.valor))?.valor || '0414'
         const telNum = tel.replace(/\D/g, '').slice(4)
-        setForm({ nombre: c.nombre||'', apellido: c.apellido||'', tel_prefijo: prefijo, tel_num: telNum, fecha_nacimiento: c.fecha_nacimiento||'' })
+        setForm({ nombre: c.nombre||'', apellido: c.apellido||'', tel_prefijo: prefijo, tel_num: telNum, fecha_nacimiento: c.fecha_nacimiento||'', parentesco: c.parentesco||'', representante: c.representante||'' })
       }
     }
   }, [id, esEdicion, clientes])
@@ -116,6 +117,12 @@ export default function NuevoCliente() {
     if (duplicado) return
     const telefono = form.tel_num.trim() ? `${form.tel_prefijo}-${form.tel_num.replace(/\D/g, '')}` : null
     const datos = { nombre: form.nombre.trim(), apellido: form.apellido.trim(), telefono, fecha_nacimiento: form.fecha_nacimiento || null }
+    // El parentesco solo se envía si se usa (así guardar sigue funcionando aunque falte el SQL de familia)
+    const original = esEdicion ? clientes.find(c => c.id === id) : null
+    if (form.parentesco || original?.parentesco) {
+      datos.parentesco = form.parentesco || null
+      datos.representante = form.parentesco ? (form.representante.trim() || null) : null
+    }
     setGuardando(true)
     try {
       if (esEdicion) {
@@ -171,6 +178,33 @@ export default function NuevoCliente() {
             <label className="glass-label">Fecha de nacimiento <span className="text-white/35 font-normal">(opcional)</span></label>
             <input type="date" className="glass-input" value={form.fecha_nacimiento}
                    onChange={e => setForm(f => ({ ...f, fecha_nacimiento: e.target.value }))} />
+          </div>
+
+          <div>
+            <span className="glass-label">¿Quién es?</span>
+            <div className="grid grid-cols-4 gap-1.5" role="radiogroup">
+              {PARENTESCOS.map(p => {
+                const on = form.parentesco === p.valor
+                return (
+                  <button key={p.valor || 'titular'} type="button" role="radio" aria-checked={on}
+                          onClick={() => setForm(f => ({ ...f, parentesco: p.valor }))}
+                          className="rounded-[10px] min-h-[42px] text-[13px] font-bold transition-colors duration-150"
+                          style={{
+                            background: on ? 'rgba(201,162,74,0.20)' : 'rgba(255,244,222,0.04)',
+                            border: `1px solid ${on ? 'rgba(201,162,74,0.55)' : 'var(--line)'}`,
+                            color: on ? '#e2c98a' : 'rgba(247,242,232,0.70)',
+                          }}>
+                    {p.app}
+                  </button>
+                )
+              })}
+            </div>
+            {form.parentesco && (
+              <input className="glass-input mt-2" value={form.representante} maxLength={80}
+                     onChange={e => setForm(f => ({ ...f, representante: e.target.value.replace(/[0-9]/g, '') }))}
+                     placeholder={form.parentesco === 'familiar' ? 'Nombre del familiar responsable' : 'Nombre del papá o la mamá'}
+                     aria-label="Nombre del responsable" />
+            )}
           </div>
 
           <div>

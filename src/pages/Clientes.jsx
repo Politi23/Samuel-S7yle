@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { Search, Plus, ChevronRight, Users, QrCode } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import { etiquetaParentesco } from '../lib/parentesco'
 
 export default function Clientes() {
   const { clientes } = useApp()
@@ -76,7 +77,13 @@ export default function Clientes() {
                         style={{background:'rgba(226,201,138,0.12)', border:'1px solid rgba(226,201,138,0.25)'}}>QR</span>
                 )}
               </p>
-              {c.telefono && <p className="text-white/50 text-sm">{c.telefono}</p>}
+              {(c.telefono || etiquetaParentesco(c)) && (
+                <p className="text-white/50 text-sm truncate">
+                  {etiquetaParentesco(c) && <span className="text-amber-300/90">{etiquetaParentesco(c)}</span>}
+                  {etiquetaParentesco(c) && c.telefono && ' · '}
+                  {c.telefono}
+                </p>
+              )}
             </div>
             <ChevronRight size={17} className="text-white/25 flex-shrink-0" />
           </button>

@@ -2,10 +2,11 @@ import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
 import { cuentaDelLink } from '../lib/cuenta'
+import { PARENTESCOS } from '../lib/parentesco'
 import { CheckCircle2, CalendarClock, Info } from 'lucide-react'
 
 const PREFIJOS = ['0412', '0422', '0414', '0416', '0424', '0426']
-const FORM_INICIAL = { nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '', website: '' }
+const FORM_INICIAL = { parentesco: '', representante: '', nombre: '', apellido: '', tel_prefijo: '0414', tel_num: '', fecha_nacimiento: '', website: '' }
 
 function validarNombre(v) {
   if (!v.trim()) return 'Requerido'
@@ -20,6 +21,8 @@ function validarTelNum(v) {
   return ''
 }
 const VALIDAR = { nombre: validarNombre, apellido: validarNombre, tel_num: validarTelNum }
+const camposAValidar = (form) => form.parentesco ? ['representante', ...Object.keys(VALIDAR)] : Object.keys(VALIDAR)
+const validar = (c, form) => c === 'representante' ? validarNombre(form.representante) : VALIDAR[c](form[c])
 
 function waLink(nombre) {
   const msg = `Hola Samuel! Soy ${nombre}, me acabo de registrar 💈`
@@ -36,12 +39,13 @@ export default function RegistroPublico() {
   const enviandoRef = useRef(false)
 
   const set = (c, v) => {
-    setForm(prev => ({ ...prev, [c]: v }))
-    if (tocados[c] && VALIDAR[c]) setErrores(prev => ({ ...prev, [c]: VALIDAR[c](v) }))
+    const nuevo = { ...form, [c]: v }
+    setForm(nuevo)
+    if (tocados[c] && (VALIDAR[c] || c === 'representante')) setErrores(prev => ({ ...prev, [c]: validar(c, nuevo) }))
   }
   const tocar = (c) => {
     setTocados(prev => ({ ...prev, [c]: true }))
-    setErrores(prev => ({ ...prev, [c]: VALIDAR[c](form[c]) }))
+    setErrores(prev => ({ ...prev, [c]: validar(c, form) }))
   }
   const onPasteTel = (e) => {
     const d = e.clipboardData.getData('text').replace(/\D/g, '')
@@ -57,9 +61,10 @@ export default function RegistroPublico() {
 
   const enviar = async (e) => {
     e.preventDefault()
-    const errs = Object.fromEntries(Object.keys(VALIDAR).map(c => [c, VALIDAR[c](form[c])]))
+    const campos = camposAValidar(form)
+    const errs = Object.fromEntries(campos.map(c => [c, validar(c, form)]))
     setErrores(errs)
-    setTocados(Object.fromEntries(Object.keys(VALIDAR).map(c => [c, true])))
+    setTocados(Object.fromEntries(campos.map(c => [c, true])))
     if (Object.values(errs).some(Boolean)) return
 
     // Campo trampa: solo los bots lo llenan
@@ -69,14 +74,20 @@ export default function RegistroPublico() {
     enviandoRef.current = true
     setEnviando(true)
     setErrorEnvio('')
-    const { data, error } = await supabase.rpc('registrar_cliente_publico', {
+    const base = {
       p_nombre:           form.nombre.trim(),
       p_apellido:         form.apellido.trim(),
       p_telefono:         `${form.tel_prefijo}-${form.tel_num}`,
       p_fecha_nacimiento: form.fecha_nacimiento || null,
       // Solo los links de prueba llevan cuenta; sin ella se guarda en la de Samuel
       ...(cuentaDelLink() ? { p_barbero: cuentaDelLink() } : {}),
-    })
+    }
+    const familia = form.parentesco ? { p_parentesco: form.parentesco, p_representante: form.representante.trim() } : {}
+    let { data, error } = await supabase.rpc('registrar_cliente_publico', { ...base, ...familia })
+    // Si Supabase todavía no tiene el parentesco (falta correr el SQL), registrar sin él
+    if (error?.code === 'PGRST202' && form.parentesco) {
+      ({ data, error } = await supabase.rpc('registrar_cliente_publico', base))
+    }
     enviandoRef.current = false
     setEnviando(false)
     if (error) {
@@ -93,7 +104,12 @@ export default function RegistroPublico() {
 
   // Deja el mismo WhatsApp y limpia los datos de la persona (para registrar a un hijo o hermano)
   const otraPersona = () => {
-    setForm(f => ({ ...FORM_INICIAL, tel_prefijo: f.tel_prefijo, tel_num: f.tel_num }))
+    setForm(f => ({
+      ...FORM_INICIAL,
+      tel_prefijo: f.tel_prefijo, tel_num: f.tel_num,
+      parentesco:    f.parentesco || 'hijo',
+      representante: f.parentesco ? f.representante : `${f.nombre.trim()} ${f.apellido.trim()}`,
+    }))
     setErrores({})
     setTocados({})
     setErrorEnvio('')
@@ -172,6 +188,43 @@ export default function RegistroPublico() {
             </section>
           ) : (
             <form onSubmit={enviar} noValidate className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <fieldset style={{ border: 'none', margin: 0, padding: 0 }}>
+                <legend className="glass-label">¿Para quién es?</legend>
+                <div className="grid grid-cols-2 gap-1.5" role="radiogroup">
+                  {PARENTESCOS.map(p => {
+                    const on = form.parentesco === p.valor
+                    return (
+                      <button key={p.valor || 'yo'} type="button" role="radio" aria-checked={on}
+                              onClick={() => set('parentesco', p.valor)}
+                              className="rounded-[10px] min-h-[44px] text-[14px] font-bold transition-colors duration-150"
+                              style={{
+                                background: on ? 'rgba(201,162,74,0.20)' : 'rgba(255,244,222,0.04)',
+                                border: `1px solid ${on ? 'rgba(201,162,74,0.55)' : 'var(--line)'}`,
+                                color: on ? '#e2c98a' : 'rgba(247,242,232,0.70)',
+                              }}>
+                        {p.registro}
+                      </button>
+                    )
+                  })}
+                </div>
+              </fieldset>
+
+              {form.parentesco && (
+                <div>
+                  <label className="glass-label" htmlFor="r-rep">{form.parentesco === 'familiar' ? 'Tu nombre completo' : 'Tu nombre (papá o mamá)'}</label>
+                  <input id="r-rep" className={`glass-input${err('representante') ? ' error' : ''}`}
+                         value={form.representante} autoComplete="name" maxLength={80}
+                         onChange={e => set('representante', e.target.value.replace(/[0-9]/g, ''))}
+                         onBlur={() => tocar('representante')} placeholder="Carlos Pérez" />
+                  {err('representante') && <p className="text-red-400 text-xs mt-1">{errores.representante}</p>}
+                </div>
+              )}
+
+              {form.parentesco && (
+                <p className="text-white/60 text-[13px] -mb-1 font-semibold">
+                  {form.parentesco === 'hijo' ? 'Datos de tu hijo' : form.parentesco === 'hija' ? 'Datos de tu hija' : 'Datos de tu familiar'}
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="glass-label" htmlFor="r-nombre">Nombre</label>
@@ -192,7 +245,7 @@ export default function RegistroPublico() {
               </div>
 
               <div>
-                <label className="glass-label" htmlFor="r-tel">WhatsApp</label>
+                <label className="glass-label" htmlFor="r-tel">{form.parentesco ? 'Tu WhatsApp' : 'WhatsApp'}</label>
                 <div className="flex gap-2">
                   <select className="glass-input" style={{ width: 96, flexShrink: 0 }} aria-label="Prefijo"
                           value={form.tel_prefijo} onChange={e => set('tel_prefijo', e.target.value)}>
@@ -206,7 +259,7 @@ export default function RegistroPublico() {
                 </div>
                 {err('tel_num')
                   ? <p className="text-red-400 text-xs mt-1">{errores.tel_num}</p>
-                  : <p className="text-white/45 text-xs mt-1.5">¿Es para un niño? Pon el WhatsApp de su papá o mamá.</p>}
+                  : form.parentesco ? null : <p className="text-white/45 text-xs mt-1.5">¿Es para un niño? Elige arriba "Mi hijo" o "Mi hija".</p>}
               </div>
 
               <div>
@@ -226,7 +279,7 @@ export default function RegistroPublico() {
               {errorEnvio && <p className="text-red-400 text-sm text-center" role="alert">{errorEnvio}</p>}
 
               <button type="submit" disabled={enviando} className="glass-btn-primary" style={enviando ? { opacity: 0.6 } : {}}>
-                {enviando ? 'Registrando…' : 'Registrarme'}
+                {enviando ? 'Registrando…' : form.parentesco ? `Registrar a ${form.parentesco === 'hijo' ? 'mi hijo' : form.parentesco === 'hija' ? 'mi hija' : 'mi familiar'}` : 'Registrarme'}
               </button>
 
               <p style={{ margin: 0, color: 'rgba(255,255,255,0.30)', fontSize: 11, textAlign: 'center', lineHeight: 1.5 }}>
