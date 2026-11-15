@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { Save, CheckCircle2 } from 'lucide-react'
+import { Save, CheckCircle2, Search, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { PARENTESCOS } from '../lib/parentesco'
 
@@ -40,6 +40,7 @@ export default function NuevoCliente() {
   const navigate = useNavigate()
   const { clientes, agregarCliente, actualizarCliente } = useApp()
   const toast = useToast()
+  const [buscaRep, setBuscaRep] = useState('')
   const [form, setForm] = useState(() => {
     if (!id) {
       try {
@@ -80,6 +81,28 @@ export default function NuevoCliente() {
     if (c === 'tel_num') return validarTelNum(v)
     return ''
   }
+  const elegirRepresentante = (c) => {
+    const digitos = soloDigitos(c.telefono)
+    setForm(f => ({
+      ...f,
+      representante: `${c.nombre} ${c.apellido}`.trim(),
+      // el teléfono del niño es el de su papá/mamá, si todavía no tiene uno
+      ...(digitos.length === 11 && !f.tel_num ? { tel_prefijo: digitos.slice(0, 4), tel_num: digitos.slice(4) } : {}),
+      apellido: f.apellido || c.apellido || '',
+    }))
+    setBuscaRep('')
+  }
+  const busquedaRep = nombreNormal(buscaRep, '')
+  const candidatosRep = busquedaRep.length >= 2
+    ? clientes
+        .filter(c => c.id !== id && (nombreNormal(c.nombre, c.apellido).includes(busquedaRep) || soloDigitos(c.telefono).includes(buscaRep.replace(/\D/g, '') || '—')))
+        .sort((a, b) => (a.parentesco ? 1 : 0) - (b.parentesco ? 1 : 0)) // primero los titulares
+        .slice(0, 5)
+    : []
+  const repRegistrado = form.representante
+    ? clientes.find(c => nombreNormal(c.nombre, c.apellido) === nombreNormal(form.representante, ''))
+    : null
+
   const set = (c, v) => {
     setForm(prev => ({ ...prev, [c]: v }))
     if (tocados[c]) setErrores(prev => ({ ...prev, [c]: validarCampo(c, v) }))
@@ -206,10 +229,60 @@ export default function NuevoCliente() {
               })}
             </div>
             {form.parentesco && (
-              <input className="glass-input mt-2" value={form.representante} maxLength={80}
-                     onChange={e => setForm(f => ({ ...f, representante: e.target.value.replace(/[0-9]/g, '') }))}
-                     placeholder={form.parentesco === 'familiar' ? 'Nombre del familiar responsable' : 'Nombre del papá o la mamá'}
-                     aria-label="Nombre del responsable" />
+              form.representante ? (
+                /* Ya elegido */
+                <div className="mt-2 flex items-center gap-3 rounded-[12px] px-3 py-2.5"
+                     style={{ background: 'rgba(201,162,74,0.10)', border: '1px solid rgba(201,162,74,0.30)' }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/55 text-[11px] font-semibold">
+                      {form.parentesco === 'familiar' ? 'Familiar responsable' : 'Papá o mamá'}
+                    </p>
+                    <p className="text-white text-sm font-bold truncate">{form.representante}</p>
+                    <p className="text-white/50 text-xs">{repRegistrado ? repRegistrado.telefono || 'Sin teléfono' : 'No está registrado como cliente'}</p>
+                  </div>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, representante: '' }))}
+                          aria-label="Cambiar papá o mamá"
+                          className="w-9 h-9 flex items-center justify-center text-white/55 active:text-white">
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                /* Buscador entre los clientes */
+                <div className="mt-2">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/45 pointer-events-none" />
+                    <input className="glass-input" style={{ paddingLeft: 38 }} value={buscaRep} maxLength={80}
+                           onChange={e => setBuscaRep(e.target.value)}
+                           placeholder={form.parentesco === 'familiar' ? 'Buscar al familiar responsable…' : 'Buscar al papá o la mamá…'}
+                           aria-label="Buscar papá o mamá entre los clientes" />
+                  </div>
+                  {busquedaRep.length >= 2 && (
+                    <ul className="mt-1">
+                      {candidatosRep.map((c, idx) => (
+                        <li key={c.id} style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
+                          <button type="button" onClick={() => elegirRepresentante(c)}
+                                  className="w-full flex items-center gap-3 px-1 py-2.5 text-left active:opacity-70">
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-white text-sm font-semibold truncate">{c.nombre} {c.apellido}</span>
+                              <span className="block text-white/50 text-xs">{c.telefono || 'Sin teléfono'}</span>
+                            </span>
+                            <span className="text-amber-300 text-xs font-bold">Elegir</span>
+                          </button>
+                        </li>
+                      ))}
+                      {/[a-zA-ZáéíóúÁÉÍÓÚñÑ]{2}/.test(buscaRep) && (
+                        <li style={candidatosRep.length ? { borderTop: '1px solid var(--line)' } : undefined}>
+                          <button type="button"
+                                  onClick={() => { setForm(f => ({ ...f, representante: buscaRep.replace(/[0-9]/g, '').trim() })); setBuscaRep('') }}
+                                  className="w-full px-1 py-2.5 text-left text-sm text-white/70 active:opacity-70">
+                            Usar «<span className="text-white font-semibold">{buscaRep.replace(/[0-9]/g, '').trim()}</span>» (no está registrado)
+                          </button>
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              )
             )}
           </div>
 
