@@ -22,10 +22,26 @@ function validarTelNum(v) {
 }
 const VALIDAR = { nombre: validarNombre, apellido: validarNombre, tel_num: validarTelNum }
 const camposAValidar = (form) => form.parentesco ? ['representante', ...Object.keys(VALIDAR)] : Object.keys(VALIDAR)
-const validar = (c, form) => c === 'representante' ? validarNombre(form.representante) : VALIDAR[c](form[c])
+/* "José  Pérez" y "jose perez" son el mismo nombre */
+const nombreNormal = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+function validar(c, form) {
+  if (c === 'representante') return validarNombre(form.representante)
+  const error = VALIDAR[c](form[c])
+  if (error || !form.parentesco || (c !== 'nombre' && c !== 'apellido')) return error
+  // Si llenó sus propios datos donde van los del niño
+  const nino = nombreNormal(`${form.nombre} ${form.apellido}`)
+  if (form.nombre.trim() && form.apellido.trim() && nino === nombreNormal(form.representante)) {
+    return c === 'nombre' ? `Aquí van los datos de tu ${form.parentesco === 'familiar' ? 'familiar' : form.parentesco}, no los tuyos` : ' '
+  }
+  return ''
+}
 
-function waLink(nombre) {
-  const msg = `Hola Samuel! Soy ${nombre}, me acabo de registrar 💈`
+function waLink(form) {
+  const quien = form.nombre.trim().split(/\s+/)[0]
+  const pariente = { hijo: 'mi hijo', hija: 'mi hija', familiar: 'a mi familiar' }[form.parentesco]
+  const msg = form.parentesco
+    ? `Hola Samuel! Soy ${form.representante.trim()}, acabo de registrar ${form.parentesco === 'familiar' ? pariente : `a ${pariente}`} ${quien} 💈`
+    : `Hola Samuel! Soy ${quien}, me acabo de registrar 💈`
   return `https://wa.me/584121381501?text=${encodeURIComponent(msg)}`
 }
 
@@ -91,7 +107,7 @@ export default function RegistroPublico() {
     enviandoRef.current = false
     setEnviando(false)
     if (error) {
-      setErrorEnvio(error.message?.includes('inválid') || error.message?.includes('Demasiados')
+      setErrorEnvio(error.code === 'P0001' || error.message?.includes('inválid') || error.message?.includes('Demasiados')
         ? error.message
         : 'No se pudo completar el registro. Intenta de nuevo.')
       return
@@ -107,6 +123,7 @@ export default function RegistroPublico() {
     setForm(f => ({
       ...FORM_INICIAL,
       tel_prefijo: f.tel_prefijo, tel_num: f.tel_num,
+      apellido:      f.apellido, // los hermanos casi siempre llevan el mismo apellido
       parentesco:    f.parentesco || 'hijo',
       representante: f.parentesco ? f.representante : `${f.nombre.trim()} ${f.apellido.trim()}`,
     }))
@@ -158,12 +175,16 @@ export default function RegistroPublico() {
               </div>
               <div>
                 <p style={{ margin: 0, color: '#fff', fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em' }}>
-                  {resultado === 'existe' ? `${nombreCorto}, ya estás registrado` : `¡Listo, ${nombreCorto}!`}
+                  {form.parentesco
+                    ? (resultado === 'existe' ? `${nombreCorto} ya estaba registrad${form.parentesco === 'hija' ? 'a' : 'o'}` : `¡Listo! ${nombreCorto} quedó registrad${form.parentesco === 'hija' ? 'a' : 'o'}`)
+                    : (resultado === 'existe' ? `${nombreCorto}, ya estás registrado` : `¡Listo, ${nombreCorto}!`)}
                 </p>
                 <p style={{ margin: '8px 0 0', color: 'rgba(255,255,255,0.60)', fontSize: 14, lineHeight: 1.5 }}>
                   {resultado === 'existe'
                     ? `${form.nombre.trim()} ${form.apellido.trim()} ya está en la lista de Samuel con el ${form.tel_prefijo}-${form.tel_num}, así que no se registró otra vez. Ya puedes apartar tu cupo.`
-                    : 'Ya quedaste registrado. Ahora puedes apartar tu cupo.'}
+                    : form.parentesco
+                      ? `Samuel ya tiene a ${nombreCorto} en su lista con tu número. Ya puedes apartarle un cupo.`
+                      : 'Ya quedaste registrado. Ahora puedes apartar tu cupo.'}
                 </p>
                 <button onClick={otraPersona}
                         style={{ marginTop: 10, background: 'none', border: 'none', color: '#e2c98a', fontSize: 14, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 4, cursor: 'pointer', minHeight: 40 }}>
@@ -175,7 +196,7 @@ export default function RegistroPublico() {
                   <CalendarClock size={18} />
                   Ver cupos disponibles
                 </a>
-                <a href={waLink(nombreCorto)} target="_blank" rel="noopener noreferrer"
+                <a href={waLink(form)} target="_blank" rel="noopener noreferrer"
                    style={{
                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                      padding: '13px 20px', borderRadius: 16, textDecoration: 'none',

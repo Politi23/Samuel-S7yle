@@ -80,6 +80,8 @@ BEGIN
     v_representante := NULL;
   ELSIF v_representante !~ '^[[:alpha:] ''-]{2,80}$' THEN
     RAISE EXCEPTION 'Nombre del papá o mamá inválido';
+  ELSIF nombre_normal(v_representante, '') = nombre_normal(v_nombre, v_apellido) THEN
+    RAISE EXCEPTION 'Aquí van los datos de tu hijo, hija o familiar, no los tuyos';
   END IF;
 
   -- Un registro a la vez por número: si llegan dos iguales al mismo tiempo
