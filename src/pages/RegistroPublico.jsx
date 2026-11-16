@@ -99,17 +99,28 @@ export default function RegistroPublico() {
       ...(cuentaDelLink() ? { p_barbero: cuentaDelLink() } : {}),
     }
     const familia = form.parentesco ? { p_parentesco: form.parentesco, p_representante: form.representante.trim() } : {}
-    let { data, error } = await supabase.rpc('registrar_cliente_publico', { ...base, ...familia })
+    // Con señal débil la solicitud puede fallar: se reintenta hasta 2 veces más.
+    // Es seguro repetirla: si el primer intento sí se guardó, el siguiente responde "existe".
+    const registrar = (params) => supabase.rpc('registrar_cliente_publico', params)
+    let { data, error } = await registrar({ ...base, ...familia })
+    for (let intento = 1; intento <= 2 && error && !error.code; intento++) {
+      await new Promise(r => setTimeout(r, 1200 * intento))
+      ;({ data, error } = await registrar({ ...base, ...familia }))
+    }
     // Si Supabase todavía no tiene el parentesco (falta correr el SQL), registrar sin él
     if (error?.code === 'PGRST202' && form.parentesco) {
-      ({ data, error } = await supabase.rpc('registrar_cliente_publico', base))
+      ({ data, error } = await registrar(base))
     }
     enviandoRef.current = false
     setEnviando(false)
     if (error) {
+      console.error('[Registro] Error al registrar:', error)
+      const sinConexion = !error.code || /fetch|network|timeout|load failed/i.test(error.message || '')
       setErrorEnvio(error.code === 'P0001' || error.message?.includes('inválid') || error.message?.includes('Demasiados')
         ? error.message
-        : 'No se pudo completar el registro. Intenta de nuevo.')
+        : sinConexion
+          ? 'Parece que la conexión está lenta o se cortó. Revisa tu señal y toca el botón otra vez.'
+          : `No se pudo completar el registro. Intenta de nuevo. (código ${error.code})`)
       return
     }
     if (data === 'numero_con_dueno') {
