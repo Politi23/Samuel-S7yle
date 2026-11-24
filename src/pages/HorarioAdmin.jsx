@@ -154,8 +154,8 @@ function Calendario({ mesVista, onMes, filas, fechaSel, onElegir, puedeAtras, pu
 const normal = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 /* ── Reservar un cupo: cliente de la app, nombre escrito o sin nombre ── */
-function PanelReservar({ clientes, onCliente, onNombre, onCerrar, guardando }) {
-  const [texto, setTexto] = useState('')
+function PanelReservar({ clientes, onCliente, onNombre, onCerrar, guardando, inicial = '' }) {
+  const [texto, setTexto] = useState(inicial)
   const q = normal(texto)
   const digitos = texto.replace(/\D/g, '')
   const encontrados = q.length >= 2
@@ -638,7 +638,7 @@ export default function HorarioAdmin() {
                           )}
 
                           {panel?.id === s.id && panel.modo === 'reservar' && (
-                            <PanelReservar clientes={clientes} guardando={reservando}
+                            <PanelReservar clientes={clientes} guardando={reservando} inicial={s.reservo || ''}
                                            onCliente={(c) => reservarCliente(s, c)}
                                            onNombre={(nombre) => reservarNombre(s, nombre)}
                                            onCerrar={() => setPanel(null)} />
@@ -653,6 +653,13 @@ export default function HorarioAdmin() {
                                     : 'Ocupado, sin nombre'}
                               </p>
                               <div className="flex gap-2">
+                                {!cita && (
+                                  <button onClick={() => setPanel({ id: s.id, modo: 'reservar' })}
+                                          className="flex-1 rounded-[10px] min-h-[42px] text-[13px] font-bold text-amber-300"
+                                          style={{ background: 'rgba(201,162,74,0.10)', border: '1px solid rgba(201,162,74,0.30)' }}>
+                                    {s.reservo ? 'Cambiar nombre' : 'Poner nombre'}
+                                  </button>
+                                )}
                                 {cita && (
                                   <button onClick={() => navigate(`/clientes/${cita.cliente_id}`)}
                                           className="flex-1 rounded-[10px] min-h-[42px] text-[13px] font-bold text-white/85"
