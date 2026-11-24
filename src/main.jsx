@@ -9,6 +9,10 @@ import LoadingScreen from './components/LoadingScreen'
 import HorarioPublico from './pages/HorarioPublico'
 import RegistroPublico from './pages/RegistroPublico'
 import './index.css'
+import { actualizarSola } from './lib/actualizar'
+
+// Tomar las versiones nuevas sin que Samuel tenga que cerrar y abrir la app
+actualizarSola()
 
 function Root() {
   // Rutas públicas: no requieren autenticación
