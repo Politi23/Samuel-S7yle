@@ -131,10 +131,12 @@ export function estaOcupado(dia, slot) {
   return !slot.fecha || slot.fecha === dia.fecha
 }
 
-export function marcarOcupado(dia, slot, ocupado) {
+/* Marca un cupo ocupado a mano (con el nombre de quien reservó, si no es cliente) o lo libera.
+   El nombre solo lo ve Samuel: la página pública solo dice "Ocupado". */
+export function marcarOcupado(dia, slot, ocupado, reservo = null) {
   return ocupado
-    ? { ...slot, ocupado: true, fecha: dia.fecha, cita: null }
-    : { ...slot, ocupado: false, fecha: null, cita: null }
+    ? { ...slot, ocupado: true, fecha: dia.fecha, cita: null, reservo: reservo || null }
+    : { ...slot, ocupado: false, fecha: null, cita: null, reservo: null }
 }
 
 export const libresDe = (dia) =>

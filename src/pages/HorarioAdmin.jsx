@@ -12,7 +12,7 @@ import {
 import { ahoraVE } from '../lib/fecha'
 import { useMarcaCuenta } from '../lib/cuenta'
 import {
-  Share2, ExternalLink, Plus, Trash2, Pencil, Check, ChevronLeft, ChevronRight,
+  Share2, ExternalLink, Plus, Trash2, Pencil, Check, ChevronLeft, ChevronRight, Search, UserRound,
   CheckCircle2, AlertCircle, Loader2, CalendarCheck,
 } from 'lucide-react'
 
@@ -150,6 +150,65 @@ function Calendario({ mesVista, onMes, filas, fechaSel, onElegir, puedeAtras, pu
   )
 }
 
+/* "José  Pérez" y "jose perez" son el mismo texto para buscar */
+const normal = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+/* ── Reservar un cupo: cliente de la app, nombre escrito o sin nombre ── */
+function PanelReservar({ clientes, onCliente, onNombre, onCerrar, guardando }) {
+  const [texto, setTexto] = useState('')
+  const q = normal(texto)
+  const digitos = texto.replace(/\D/g, '')
+  const encontrados = q.length >= 2
+    ? clientes.filter(c => normal(`${c.nombre} ${c.apellido}`).includes(q) || (digitos.length >= 3 && (c.telefono || '').replace(/\D/g, '').includes(digitos))).slice(0, 5)
+    : []
+  const nombreLibre = texto.replace(/[0-9]/g, '').trim()
+  return (
+    <div className="mt-2 rounded-[12px] p-3 space-y-2" style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line-strong)' }}>
+      <p className="text-white text-sm font-bold">¿Quién reservó?</p>
+      <div className="relative">
+        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/45 pointer-events-none" />
+        <input autoFocus className="glass-input" style={{ paddingLeft: 38 }} value={texto} maxLength={60}
+               onChange={e => setTexto(e.target.value)} placeholder="Buscar cliente o escribir un nombre…"
+               aria-label="Buscar cliente o escribir un nombre" />
+      </div>
+      {encontrados.length > 0 && (
+        <ul>
+          {encontrados.map((c, idx) => (
+            <li key={c.id} style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
+              <button type="button" disabled={guardando} onClick={() => onCliente(c)}
+                      className="w-full flex items-center gap-3 px-1 py-2.5 text-left active:opacity-70 disabled:opacity-50">
+                <span className="flex-1 min-w-0">
+                  <span className="block text-white text-sm font-semibold truncate">{c.nombre} {c.apellido}</span>
+                  <span className="block text-white/50 text-xs">{c.telefono || 'Sin teléfono'}</span>
+                </span>
+                <span className="text-amber-300 text-xs font-bold">Reservar</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {/[a-zA-ZáéíóúÁÉÍÓÚñÑ]{2}/.test(nombreLibre) && (
+        <button type="button" onClick={() => onNombre(nombreLibre)}
+                className="w-full px-1 py-2 text-left text-sm text-white/75 active:opacity-70"
+                style={encontrados.length ? { borderTop: '1px solid var(--line)' } : undefined}>
+          Reservar a «<span className="text-white font-semibold">{nombreLibre}</span>» (no está registrado)
+        </button>
+      )}
+      <div className="flex gap-2 pt-1">
+        <button type="button" onClick={() => onNombre(null)}
+                className="flex-1 rounded-[10px] min-h-[42px] text-[13px] font-bold text-white/80"
+                style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line-strong)' }}>
+          Ocupado sin nombre
+        </button>
+        <button type="button" onClick={onCerrar}
+                className="flex-1 rounded-[10px] min-h-[42px] text-[13px] font-bold text-white/60">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /* ── Tira de la semana: los próximos 7 días ──────────────────── */
 function SemanaTira({ filas, fechaSel, onElegir }) {
   const dias = proximosDias(filas, 7)
@@ -189,7 +248,7 @@ function SemanaTira({ filas, fechaSel, onElegir }) {
 export default function HorarioAdmin() {
   const toast = useToast()
   const navigate = useNavigate()
-  const { citas } = useApp()
+  const { citas, clientes, agregarCita, actualizarCita } = useApp()
   const [filas, setFilas]         = useState([])
   const [cargando, setCargando]   = useState(true)
   const [fechaSel, setFechaSel]   = useState(hoy)
@@ -198,6 +257,8 @@ export default function HorarioAdmin() {
   const [editando, setEditando]   = useState(null)
   const [nuevo, setNuevo]         = useState(null) // { inicio, fin, error } mientras agrega un cupo
   const [confirmar, setConfirmar] = useState(null) // 'dia' | 'periodo' mientras pide confirmación
+  const [panel, setPanel]         = useState(null) // { id, modo: 'reservar' | 'reservado' } del cupo abierto
+  const [reservando, setReservando] = useState(false)
   const [modo, setModo] = useState(() => {
     try { return localStorage.getItem('horario_modo') === 'mes' ? 'mes' : 'semana' } catch { return 'semana' }
   })
@@ -302,7 +363,7 @@ export default function HorarioAdmin() {
     return { anio: Math.floor(total / 12), mes: total % 12 }
   })
   const elegirFecha = (fecha) => {
-    setFechaSel(fecha); setEditando(null); setNuevo(null); setConfirmar(null)
+    setFechaSel(fecha); setEditando(null); setNuevo(null); setConfirmar(null); setPanel(null)
   }
 
   /* ── acciones sobre la fecha elegida ───────────────────────── */
@@ -313,8 +374,44 @@ export default function HorarioAdmin() {
     guardarCambio({ ...fila, abierto: !fila.abierto })
   }
 
-  const toggleSlot = (slot) =>
-    cambiarFecha(d => ({ ...d, slots: d.slots.map(s => s.id === slot.id ? marcarOcupado(d, s, !estaOcupado(d, s)) : s) }))
+  // Reservar para un cliente de la app: se crea su cita y el cupo se ocupa solo con su nombre
+  const reservarCliente = async (slot, c) => {
+    setReservando(true)
+    try {
+      await agregarCita({
+        cliente_id: c.id, cliente_nombre: `${c.nombre} ${c.apellido}`.trim(),
+        fecha: fechaSel, hora: slot.inicio, motivo: 'Sin especificar', notas: '',
+      })
+      toast(`Cupo de las ${fmtHora(slot.inicio)} reservado para ${c.nombre}`, 'success')
+      setPanel(null)
+    } catch {
+      toast('No se pudo crear la cita. Revisa la conexión.', 'error')
+    } finally {
+      setReservando(false)
+    }
+  }
+
+  // Reservar con un nombre escrito (no es cliente) o sin nombre
+  const reservarNombre = (slot, nombre) => {
+    cambiarFecha(d => ({ ...d, slots: d.slots.map(s => s.id === slot.id ? marcarOcupado(d, s, true, nombre) : s) }))
+    setPanel(null)
+  }
+
+  // Quitar la reserva: si era una cita, se cancela; si era a mano, el cupo se libera
+  const quitarReserva = async (slot, cita) => {
+    if (cita) {
+      try {
+        await actualizarCita(cita.id, { estado: 'cancelada' })
+        toast(`Cita de ${cita.cliente_nombre.split(' ')[0]} cancelada; el cupo quedó libre`, 'success')
+      } catch {
+        toast('No se pudo cancelar la cita. Revisa la conexión.', 'error')
+        return
+      }
+    } else {
+      cambiarFecha(d => ({ ...d, slots: d.slots.map(s => s.id === slot.id ? marcarOcupado(d, s, false) : s) }))
+    }
+    setPanel(null)
+  }
 
   const borrarSlot = (slot) => cambiarFecha(d => ({ ...d, slots: d.slots.filter(s => s.id !== slot.id) }))
 
@@ -506,19 +603,27 @@ export default function HorarioAdmin() {
                                 {paso && <span className="ml-2 text-white/50 text-xs font-semibold">pasó</span>}
                               </span>
                               {cita ? (
-                                <button onClick={() => navigate(`/clientes/${cita.cliente_id}`)}
+                                <button onClick={() => setPanel(p => p?.id === s.id ? null : { id: s.id, modo: 'reservado' })}
+                                        aria-expanded={panel?.id === s.id}
                                         className="flex items-center gap-1.5 rounded-full px-3 min-h-[36px] text-xs font-bold max-w-[150px]"
                                         style={{ background: 'rgba(201,162,74,0.14)', color: '#e2c98a', border: '1px solid rgba(201,162,74,0.30)' }}>
                                   <CalendarCheck size={13} className="flex-shrink-0" />
                                   <span className="truncate">{cita.cliente_nombre.split(' ')[0]}</span>
                                 </button>
+                              ) : ocupado ? (
+                                <button onClick={() => setPanel(p => p?.id === s.id ? null : { id: s.id, modo: 'reservado' })}
+                                        aria-expanded={panel?.id === s.id}
+                                        className="flex items-center gap-1.5 rounded-full px-3 min-h-[36px] text-xs font-bold max-w-[150px] transition-colors duration-150"
+                                        style={{ background: 'rgba(248,113,113,0.14)', color: '#fca5a5', border: '1px solid rgba(248,113,113,0.30)' }}>
+                                  {s.reservo && <UserRound size={13} className="flex-shrink-0" />}
+                                  <span className="truncate">{s.reservo ? s.reservo.split(' ')[0] : 'Ocupado'}</span>
+                                </button>
                               ) : (
-                                <button onClick={() => toggleSlot(s)} aria-pressed={ocupado}
+                                <button onClick={() => !paso && setPanel(p => p?.id === s.id ? null : { id: s.id, modo: 'reservar' })}
+                                        disabled={paso} aria-expanded={panel?.id === s.id}
                                         className="rounded-full px-3.5 min-h-[36px] text-xs font-bold transition-colors duration-150"
-                                        style={ocupado
-                                          ? { background: 'rgba(248,113,113,0.14)', color: '#fca5a5', border: '1px solid rgba(248,113,113,0.30)' }
-                                          : { background: 'rgba(124,192,147,0.12)', color: '#9fd3ae', border: '1px solid rgba(124,192,147,0.28)' }}>
-                                  {ocupado ? 'Ocupado' : 'Libre'}
+                                        style={{ background: 'rgba(124,192,147,0.12)', color: '#9fd3ae', border: '1px solid rgba(124,192,147,0.28)' }}>
+                                  Libre
                                 </button>
                               )}
                               <button onClick={() => setEditando(s.id)} aria-label="Cambiar horas"
@@ -531,6 +636,38 @@ export default function HorarioAdmin() {
                               </button>
                             </div>
                           )}
+
+                          {panel?.id === s.id && panel.modo === 'reservar' && (
+                            <PanelReservar clientes={clientes} guardando={reservando}
+                                           onCliente={(c) => reservarCliente(s, c)}
+                                           onNombre={(nombre) => reservarNombre(s, nombre)}
+                                           onCerrar={() => setPanel(null)} />
+                          )}
+                          {panel?.id === s.id && panel.modo === 'reservado' && (
+                            <div className="mt-2 rounded-[12px] p-3 space-y-2" style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line-strong)' }}>
+                              <p className="text-white text-sm">
+                                {cita
+                                  ? <>Reservado por <span className="font-bold">{cita.cliente_nombre}</span> (tiene cita)</>
+                                  : s.reservo
+                                    ? <>Reservado por <span className="font-bold">{s.reservo}</span> (no está registrado)</>
+                                    : 'Ocupado, sin nombre'}
+                              </p>
+                              <div className="flex gap-2">
+                                {cita && (
+                                  <button onClick={() => navigate(`/clientes/${cita.cliente_id}`)}
+                                          className="flex-1 rounded-[10px] min-h-[42px] text-[13px] font-bold text-white/85"
+                                          style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line-strong)' }}>
+                                    Ver cliente
+                                  </button>
+                                )}
+                                <button onClick={() => quitarReserva(s, cita)}
+                                        className="flex-1 rounded-[10px] min-h-[42px] text-[13px] font-bold text-red-300"
+                                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.28)' }}>
+                                  {cita ? 'Quitar reserva (cancela la cita)' : 'Quitar reserva'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </li>
                       )
                     })}
@@ -539,7 +676,7 @@ export default function HorarioAdmin() {
 
                 {slots.length > 0 && (
                   <p className="text-white/45 text-xs mt-1">
-                    Toca <span className="text-emerald-300 font-semibold">Libre</span> para marcarlo ocupado.
+                    Toca <span className="text-emerald-300 font-semibold">Libre</span> para anotar quién reservó.
                   </p>
                 )}
 
