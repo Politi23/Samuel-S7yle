@@ -5,30 +5,28 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import PageHeader from '../components/PageHeader'
 import {
-  ordenarDesdeHoy, etiquetaDia, etiquetaCorta, fechaDelDia, fmtHora,
-  ordenarSlots, validarSlots, yaPaso,
-  estaOcupado, marcarOcupado, aplicarCitas, libresDe, aMinutos, deMinutos,
+  DIAS, DIAS_CORTOS, MESES, hoy, ordenSemana, filaDeFecha, vistaDia,
+  reemplazarFecha, etiquetaDia, fechaLarga, fmtHora, ordenarSlots, validarSlots, validarFila,
+  yaPaso, estaOcupado, marcarOcupado, aplicarCitas, libresDe, libresFila, aMinutos, deMinutos,
 } from '../lib/horario'
 import { ahoraVE } from '../lib/fecha'
 import { useMarcaCuenta } from '../lib/cuenta'
 import {
-  Share2, ExternalLink, Plus, Trash2, Pencil, Check,
+  Share2, ExternalLink, Plus, Trash2, Pencil, Check, ChevronLeft, ChevronRight,
   CheckCircle2, AlertCircle, Loader2, CalendarCheck,
 } from 'lucide-react'
 
-const DIAS_DEFAULT = [
-  { dia: 'Lunes',     orden: 0, abierto: true,  cupos: 0, slots: [] },
-  { dia: 'Martes',    orden: 1, abierto: true,  cupos: 0, slots: [] },
-  { dia: 'Miércoles', orden: 2, abierto: true,  cupos: 0, slots: [] },
-  { dia: 'Jueves',    orden: 3, abierto: true,  cupos: 0, slots: [] },
-  { dia: 'Viernes',   orden: 4, abierto: true,  cupos: 0, slots: [] },
-  { dia: 'Sábado',    orden: 5, abierto: true,  cupos: 0, slots: [] },
-  { dia: 'Domingo',   orden: 6, abierto: false, cupos: 0, slots: [] },
-]
-const fechaCorta = (dia) => {
-  const d = new Date(fechaDelDia(dia) + 'T12:00')
-  return d.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', '')
+const DIAS_DEFAULT = DIAS.map((dia, orden) => ({ dia, orden, abierto: orden !== 6, cupos: 0, slots: [] }))
+const MESES_ADELANTE = 6 // hasta cuántos meses se puede planificar
+
+/* Próxima media hora desde ahora (hora de Caracas), para sugerir el primer cupo de hoy */
+function proximaMediaHora() {
+  const min = aMinutos(ahoraVE())
+  return deMinutos(Math.min(Math.ceil((min + 1) / 30) * 30, 23 * 60))
 }
+
+const sumarMinutos = (hhmm, min) => deMinutos(Math.min(aMinutos(hhmm) + min, 23 * 60 + 59))
+const claveMes = ({ anio, mes }) => `${anio}-${String(mes + 1).padStart(2, '0')}`
 
 /* ── Interruptor abierto / cerrado ───────────────────────────── */
 function Interruptor({ activo, onChange, etiqueta }) {
@@ -46,14 +44,6 @@ function Interruptor({ activo, onChange, etiqueta }) {
     </button>
   )
 }
-
-/* Próxima media hora desde ahora (hora de Caracas), para sugerir el primer cupo de hoy */
-function proximaMediaHora() {
-  const min = aMinutos(ahoraVE())
-  return deMinutos(Math.min(Math.ceil((min + 1) / 30) * 30, 23 * 60))
-}
-
-const sumarMinutos = (hhmm, min) => deMinutos(Math.min(aMinutos(hhmm) + min, 23 * 60 + 59))
 
 /* ── Confirmación de borrado en línea ────────────────────────── */
 function ConfirmarBorrado({ texto, onCancelar, onBorrar }) {
@@ -97,18 +87,82 @@ function EstadoGuardado({ estado, onReintentar }) {
   return null
 }
 
+/* ── Calendario del mes ──────────────────────────────────────── */
+function Calendario({ mesVista, onMes, filas, fechaSel, onElegir, puedeAtras, puedeAdelante }) {
+  const hoyStr = hoy()
+  const primero = `${claveMes(mesVista)}-01`
+  const huecos = ordenSemana(primero)
+  const diasDelMes = new Date(Date.UTC(mesVista.anio, mesVista.mes + 1, 0)).getUTCDate()
+
+  return (
+    <section className="glass-card" style={{ padding: 14 }} aria-label="Calendario">
+      <div className="flex items-center justify-between">
+        <button onClick={() => onMes(-1)} disabled={!puedeAtras} aria-label="Mes anterior"
+                className="w-10 h-10 flex items-center justify-center rounded-xl active:bg-white/10 disabled:opacity-25">
+          <ChevronLeft size={20} className="text-white/75" />
+        </button>
+        <h2 className="text-white text-[15px] font-bold">{MESES[mesVista.mes]} {mesVista.anio}</h2>
+        <button onClick={() => onMes(1)} disabled={!puedeAdelante} aria-label="Mes siguiente"
+                className="w-10 h-10 flex items-center justify-center rounded-xl active:bg-white/10 disabled:opacity-25">
+          <ChevronRight size={20} className="text-white/75" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 mt-2" role="grid">
+        {DIAS_CORTOS.map(d => (
+          <span key={d} className="text-center text-[11px] font-bold text-white/45 pb-1">{d}</span>
+        ))}
+        {Array.from({ length: huecos }, (_, i) => <span key={`h${i}`} />)}
+        {Array.from({ length: diasDelMes }, (_, i) => {
+          const fecha = `${claveMes(mesVista)}-${String(i + 1).padStart(2, '0')}`
+          const pasado = fecha < hoyStr
+          const vista = pasado ? null : vistaDia(filas, fecha)
+          const cerrado = vista && !vista.abierto
+          // Cupos que todavía no pasaron (hoy, los de horas ya pasadas no cuentan)
+          const total = vista ? vista.slots.filter(s => !yaPaso(vista, s)).length : 0
+          const libres = vista ? libresDe(vista) : 0
+          const sel = fecha === fechaSel
+          const esHoy = fecha === hoyStr
+          return (
+            <button key={fecha} onClick={() => !pasado && onElegir(fecha)} disabled={pasado}
+                    aria-label={`${fechaLarga(fecha)}${cerrado ? ', cerrado' : total ? `, ${libres} libres de ${total}` : ', sin cupos'}`}
+                    aria-pressed={sel}
+                    className="flex flex-col items-center justify-center rounded-[10px] min-h-[46px] transition-colors duration-150"
+                    style={{
+                      background: sel ? 'rgba(201,162,74,0.20)' : total && !cerrado ? 'rgba(255,244,222,0.05)' : 'transparent',
+                      border: `1px solid ${sel ? 'rgba(201,162,74,0.60)' : esHoy ? 'rgba(201,162,74,0.35)' : 'transparent'}`,
+                      opacity: pasado ? 0.25 : 1,
+                    }}>
+              <span className="text-[14px] font-bold leading-none"
+                    style={{ color: sel || esHoy ? '#e2c98a' : cerrado ? 'rgba(247,242,232,0.35)' : '#f7f2e8' }}>
+                {i + 1}
+              </span>
+              <span className="text-[10px] font-bold leading-none mt-1 h-[10px]"
+                    style={{ color: libres > 0 ? '#9fd3ae' : '#fca5a5' }}>
+                {!pasado && !cerrado && total > 0 ? (libres > 0 ? libres : 'lleno') : ''}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <p className="text-white/45 text-[11px] mt-2 px-1">El número verde son los cupos libres de ese día.</p>
+    </section>
+  )
+}
+
 /* ── Página ──────────────────────────────────────────────────── */
 export default function HorarioAdmin() {
   const toast = useToast()
   const navigate = useNavigate()
   const { citas } = useApp()
-  const [dias, setDias]           = useState([])
+  const [filas, setFilas]         = useState([])
   const [cargando, setCargando]   = useState(true)
-  const [selId, setSelId]         = useState(null)
+  const [fechaSel, setFechaSel]   = useState(hoy)
+  const [mesVista, setMesVista]   = useState(() => { const [a, m] = hoy().split('-').map(Number); return { anio: a, mes: m - 1 } })
   const [estados, setEstados]     = useState({})
   const [editando, setEditando]   = useState(null)
   const [nuevo, setNuevo]         = useState(null) // { inicio, fin, error } mientras agrega un cupo
-  const [confirmar, setConfirmar] = useState(null) // 'dia' | 'semana' mientras pide confirmación
+  const [confirmar, setConfirmar] = useState(null) // 'dia' | 'mes' mientras pide confirmación
 
   const citasRef    = useRef(citas)
   const pendientes  = useRef({})
@@ -117,44 +171,50 @@ export default function HorarioAdmin() {
   const marca = useMarcaCuenta()
   const urlPublica = `${window.location.origin}/horario${marca || ''}`
 
-  /* ── guardado automático ───────────────────────────────────── */
-  const guardarDia = useCallback(async (dia) => {
-    const conCitas = aplicarCitas(dia, citasRef.current) || dia
-    const invalido = validarSlots(conCitas.slots)
+  /* ── guardado automático (por fila = día de la semana, con todas sus fechas) ── */
+  const guardarFila = useCallback(async (fila) => {
+    const conCitas = aplicarCitas(fila, citasRef.current) || fila
+    const invalido = validarFila(conCitas)
     if (invalido) {
-      setEstados(e => ({ ...e, [dia.id]: { tipo: 'invalido', msg: invalido } }))
+      setEstados(e => ({ ...e, [fila.id]: { tipo: 'invalido', msg: invalido } }))
       return
     }
-    setEstados(e => ({ ...e, [dia.id]: { tipo: 'guardando' } }))
+    setEstados(e => ({ ...e, [fila.id]: { tipo: 'guardando' } }))
     const { error } = await supabase.from('disponibilidad').update({
       abierto:    conCitas.abierto,
       slots:      conCitas.slots,
-      cupos:      libresDe(conCitas),
+      cupos:      libresFila(conCitas),
       updated_at: new Date().toISOString(),
-    }).eq('id', dia.id)
-    setEstados(e => ({ ...e, [dia.id]: { tipo: error ? 'error' : 'guardado' } }))
+    }).eq('id', fila.id)
+    setEstados(e => ({ ...e, [fila.id]: { tipo: error ? 'error' : 'guardado' } }))
   }, [])
 
-  const programar = useCallback((dia, ms = 0) => {
-    clearTimeout(pendientes.current[dia.id]?.timer)
-    const timer = setTimeout(() => { delete pendientes.current[dia.id]; guardarDia(dia) }, ms)
-    pendientes.current[dia.id] = { timer, dia }
-  }, [guardarDia])
+  const programar = useCallback((fila, ms = 0) => {
+    clearTimeout(pendientes.current[fila.id]?.timer)
+    const timer = setTimeout(() => { delete pendientes.current[fila.id]; guardarFila(fila) }, ms)
+    pendientes.current[fila.id] = { timer, fila }
+  }, [guardarFila])
 
   // Al salir de la pantalla, guardar lo que quedó en espera
   useEffect(() => () => {
-    Object.values(pendientes.current).forEach(({ timer, dia }) => { clearTimeout(timer); guardarDia(dia) })
-  }, [guardarDia])
+    Object.values(pendientes.current).forEach(({ timer, fila }) => { clearTimeout(timer); guardarFila(fila) })
+  }, [guardarFila])
 
-  // Lo que se muestra: los días con las citas actuales aplicadas (si cambian con la pantalla abierta)
-  const diasVista = useMemo(() => dias.map(d => aplicarCitas(d, citas) || d), [dias, citas])
+  // Lo que se muestra: las filas con las citas actuales aplicadas
+  const filasVista = useMemo(() => filas.map(f => aplicarCitas(f, citas) || f), [filas, citas])
 
-  const cambiarDia = (id, fn, ms = 0) => {
-    const actual = diasVista.find(d => d.id === id)
-    if (!actual) return
-    const nuevo = fn(actual)
-    setDias(prev => prev.map(d => d.id === id ? nuevo : d))
-    programar(nuevo, ms)
+  const guardarCambio = (filaNueva, ms = 0) => {
+    setFilas(prev => prev.map(f => f.id === filaNueva.id ? filaNueva : f))
+    programar(filaNueva, ms)
+  }
+
+  /* Cambia la vista de la fecha elegida y guarda su fila (las demás fechas no se tocan) */
+  const cambiarFecha = (fn, ms = 0) => {
+    const fila = filaDeFecha(filasVista, fechaSel)
+    const vista = vistaDia(filasVista, fechaSel)
+    if (!fila || !vista) return
+    const nuevaVista = fn(vista)
+    guardarCambio({ ...reemplazarFecha(fila, fechaSel, nuevaVista.slots), abierto: nuevaVista.abierto }, ms)
   }
 
   /* ── carga ─────────────────────────────────────────────────── */
@@ -167,18 +227,19 @@ export default function HorarioAdmin() {
           .from('disponibilidad').select('*').eq('user_id', session.user.id)
         if (error) throw error
 
-        let filas = data
-        if (!filas?.length) {
+        let lista = data
+        if (!lista?.length) {
           const { data: ins, error: insErr } = await supabase.from('disponibilidad')
             .insert(DIAS_DEFAULT.map(d => ({ ...d, user_id: session.user.id }))).select()
           if (insErr) throw insErr
-          filas = ins || []
+          lista = ins || []
         }
-        const ordenados = ordenarDesdeHoy(filas.map(d => ({ ...d, slots: ordenarSlots(Array.isArray(d.slots) ? d.slots : []) })))
-        // Guardar los días que cambian al aplicar las citas (y migrar marcas viejas sin fecha)
-        ordenados.forEach(d => { const c = aplicarCitas(d, citasRef.current); if (c) programar(c) })
-        setDias(ordenados)
-        setSelId(ordenados[0]?.id ?? null)
+        const normal = lista
+          .map(f => ({ ...f, slots: Array.isArray(f.slots) ? f.slots : [] }))
+          .sort((a, b) => a.orden - b.orden)
+        // Guardar las filas que cambian al aplicar las citas (y borrar lo pasado)
+        normal.forEach(f => { const c = aplicarCitas(f, citasRef.current); if (c) programar(c) })
+        setFilas(normal)
       } catch {
         toast('No se pudo cargar el horario', 'error')
       } finally {
@@ -188,22 +249,36 @@ export default function HorarioAdmin() {
     cargar()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── acciones ──────────────────────────────────────────────── */
-  const dia = diasVista.find(d => d.id === selId)
+  /* ── navegación ────────────────────────────────────────────── */
+  const [anioHoy, mesHoy] = hoy().split('-').map(Number)
+  const indiceMes = (m) => (m.anio - anioHoy) * 12 + (m.mes - (mesHoy - 1))
+  const moverMes = (paso) => setMesVista(m => {
+    const total = m.anio * 12 + m.mes + paso
+    return { anio: Math.floor(total / 12), mes: total % 12 }
+  })
+  const elegirFecha = (fecha) => {
+    setFechaSel(fecha); setEditando(null); setNuevo(null); setConfirmar(null)
+  }
 
-  const toggleAbierto = () => cambiarDia(dia.id, d => ({ ...d, abierto: !d.abierto }))
+  /* ── acciones sobre la fecha elegida ───────────────────────── */
+  const dia = filasVista.length ? vistaDia(filasVista, fechaSel) : null
+
+  const toggleAbierto = () => {
+    const fila = filaDeFecha(filasVista, fechaSel)
+    guardarCambio({ ...fila, abierto: !fila.abierto })
+  }
 
   const toggleSlot = (slot) =>
-    cambiarDia(dia.id, d => ({ ...d, slots: d.slots.map(s => s.id === slot.id ? marcarOcupado(d, s, !estaOcupado(d, s)) : s) }))
+    cambiarFecha(d => ({ ...d, slots: d.slots.map(s => s.id === slot.id ? marcarOcupado(d, s, !estaOcupado(d, s)) : s) }))
 
-  const borrarSlot = (slot) => cambiarDia(dia.id, d => ({ ...d, slots: d.slots.filter(s => s.id !== slot.id) }))
+  const borrarSlot = (slot) => cambiarFecha(d => ({ ...d, slots: d.slots.filter(s => s.id !== slot.id) }))
 
   const editarHora = (slot, campo, valor) =>
-    cambiarDia(dia.id, d => ({ ...d, slots: d.slots.map(s => s.id === slot.id ? { ...s, [campo]: valor } : s) }), 700)
+    cambiarFecha(d => ({ ...d, slots: d.slots.map(s => s.id === slot.id ? { ...s, [campo]: valor } : s) }), 700)
 
   const terminarEdicion = () => {
     setEditando(null)
-    cambiarDia(dia.id, d => ({ ...d, slots: ordenarSlots(d.slots) }))
+    cambiarFecha(d => ({ ...d, slots: ordenarSlots(d.slots) }))
   }
 
   // Sugiere el siguiente cupo: empieza donde terminó el último y dura lo mismo
@@ -216,32 +291,34 @@ export default function HorarioAdmin() {
 
   const agregarSlot = () => {
     if (!nuevo.inicio || !nuevo.fin) { setNuevo(n => ({ ...n, error: 'Pon la hora en que empieza y en la que termina' })); return }
-    const slot = { id: crypto.randomUUID(), dia_fecha: fechaDelDia(dia), inicio: nuevo.inicio, fin: nuevo.fin, ocupado: false }
+    const slot = { id: crypto.randomUUID(), dia_fecha: fechaSel, inicio: nuevo.inicio, fin: nuevo.fin, ocupado: false }
     const error = validarSlots([...dia.slots, slot])
     if (error) { setNuevo(n => ({ ...n, error })); return }
-    cambiarDia(dia.id, d => ({ ...d, abierto: true, slots: ordenarSlots([...d.slots, slot]) }))
+    cambiarFecha(d => ({ ...d, slots: ordenarSlots([...d.slots, slot]) }))
     // Dejar listo el siguiente para agregar varios seguidos
     const dur = aMinutos(slot.fin) - aMinutos(slot.inicio)
     setNuevo({ inicio: slot.fin, fin: sumarMinutos(slot.fin, dur), error: '' })
   }
 
   const borrarDia = () => {
-    cambiarDia(dia.id, d => ({ ...d, slots: [] }))
+    cambiarFecha(d => ({ ...d, slots: [] }))
     setConfirmar(null)
     setNuevo(null)
-    toast(`Cupos de ${etiquetaDia(dia).toLowerCase()} borrados`, 'success')
+    toast(`Cupos del ${fechaLarga(fechaSel)} borrados`, 'success')
   }
 
-  const borrarSemana = () => {
-    const vacios = diasVista.map(d => ({ ...d, slots: [] }))
-    setDias(vacios)
-    vacios.forEach(d => programar(d))
+  // Todos los cupos del mes que se está viendo (desde hoy)
+  const prefijoMes = claveMes(mesVista)
+  const totalMes = filasVista.reduce((n, f) => n + f.slots.filter(s => (s.dia_fecha || '').startsWith(prefijoMes) && s.dia_fecha >= hoy()).length, 0)
+  const borrarMes = () => {
+    filasVista.forEach(f => {
+      const quedan = f.slots.filter(s => !((s.dia_fecha || '').startsWith(prefijoMes) && s.dia_fecha >= hoy()))
+      if (quedan.length !== f.slots.length) guardarCambio({ ...f, slots: quedan })
+    })
     setConfirmar(null)
     setNuevo(null)
-    toast('Cupos de la semana borrados', 'success')
+    toast(`Cupos de ${MESES[mesVista.mes].toLowerCase()} borrados`, 'success')
   }
-
-  const totalSemana = diasVista.reduce((n, d) => n + d.slots.length, 0)
 
   const compartir = async () => {
     if (navigator.share) {
@@ -253,11 +330,13 @@ export default function HorarioAdmin() {
   }
 
   /* ── render ────────────────────────────────────────────────── */
-  const estado = dia ? estados[dia.id] : null
-  const slots  = dia ? ordenarSlots(dia.slots) : []
+  const filaSel  = dia ? filaDeFecha(filasVista, fechaSel) : null
+  const estado   = filaSel ? estados[filaSel.id] : null
+  const slots    = dia ? dia.slots : []
   const ocupados = dia ? slots.filter(s => estaOcupado(dia, s)).length : 0
   const libres   = dia ? libresDe(dia) : 0
   const citaDe   = (s) => s.cita && citas.find(c => c.id === s.cita)
+  const nombreDiaPlural = dia ? `${DIAS[ordenSemana(fechaSel)].toLowerCase()}s` : ''
 
   return (
     <div className="min-h-screen">
@@ -280,55 +359,35 @@ export default function HorarioAdmin() {
       <div className="px-4 pt-4 pb-8 space-y-4">
 
         <p className="text-white/55 text-[13px] leading-relaxed">
-          Agrega los cupos de cada día cuando sepas tu horario; se guarda solo. Las citas ocupan su cupo automáticamente y los cupos de días que ya pasaron se borran solos.
+          Elige un día del calendario y agrega sus cupos; puedes planificar el mes completo. Se guarda solo, las citas ocupan su cupo y los días que ya pasaron se borran solos.
         </p>
 
-        {/* ── Días ── */}
+        {/* ── Calendario ── */}
         {cargando ? (
-          <div className="glass-card h-[68px]" />
+          <div className="glass-card h-[340px]" />
         ) : (
-          <div className="grid grid-cols-7 gap-1.5" role="tablist" aria-label="Días de la semana">
-            {diasVista.map(d => {
-              const sel = d.id === selId
-              const n = libresDe(d)
-              return (
-                <button key={d.id} role="tab" aria-selected={sel}
-                        onClick={() => { setSelId(d.id); setEditando(null); setNuevo(null); setConfirmar(null) }}
-                        className="flex flex-col items-center justify-center gap-1 rounded-[12px] py-2.5 min-h-[60px] transition-colors duration-150"
-                        style={{
-                          background: sel ? 'rgba(201,162,74,0.16)' : 'rgba(255,244,222,0.035)',
-                          border: `1px solid ${sel ? 'rgba(201,162,74,0.55)' : 'var(--line)'}`,
-                        }}>
-                  <span className="text-[11px] font-bold leading-none" style={{ color: sel ? '#e2c98a' : 'rgba(247,242,232,0.70)' }}>
-                    {etiquetaCorta(d)}
-                  </span>
-                  <span className="text-[15px] font-extrabold leading-none"
-                        style={{ color: !d.abierto || !d.slots.length ? 'rgba(247,242,232,0.35)' : n > 0 ? '#f7f2e8' : '#fca5a5' }}>
-                    {!d.abierto ? '—' : n}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+          <Calendario mesVista={mesVista} onMes={moverMes} filas={filasVista}
+                      fechaSel={fechaSel} onElegir={elegirFecha}
+                      puedeAtras={indiceMes(mesVista) > 0} puedeAdelante={indiceMes(mesVista) < MESES_ADELANTE} />
         )}
 
-        {/* ── Día seleccionado ── */}
+        {/* ── Día elegido ── */}
         {dia && (
           <section className="glass-card" style={{ padding: 18 }}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="text-white text-xl font-extrabold leading-tight">{etiquetaDia(dia)}</h2>
-                <p className="text-white/55 text-[13px] mt-0.5">{fechaCorta(dia)}</p>
+                <p className="text-white/55 text-[13px] mt-0.5">{fechaLarga(fechaSel)}</p>
               </div>
               <Interruptor activo={dia.abierto} onChange={toggleAbierto}
-                           etiqueta={dia.abierto ? `Cerrar ${dia.dia}` : `Abrir ${dia.dia}`} />
+                           etiqueta={dia.abierto ? `Cerrar todos los ${nombreDiaPlural}` : `Abrir los ${nombreDiaPlural}`} />
             </div>
 
             <div className="flex items-center justify-between gap-2 mt-2 min-h-[20px]">
               <span className="text-white/60 text-xs">
                 {dia.abierto && slots.length > 0 && `${libres} ${libres === 1 ? 'libre' : 'libres'} · ${ocupados} ${ocupados === 1 ? 'ocupado' : 'ocupados'}`}
               </span>
-              <EstadoGuardado estado={estado} onReintentar={() => guardarDia(dia)} />
+              <EstadoGuardado estado={estado} onReintentar={() => guardarFila(filaSel)} />
             </div>
 
             {estado?.tipo === 'invalido' && (
@@ -339,7 +398,8 @@ export default function HorarioAdmin() {
 
             {!dia.abierto ? (
               <p className="text-white/55 text-sm mt-4 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
-                Los clientes ven este día como cerrado. Queda cerrado también las próximas semanas hasta que lo vuelvas a abrir.
+                Los {nombreDiaPlural} están cerrados: los clientes los ven como cerrados todas las semanas hasta que los vuelvas a abrir.
+                Si solo este día no vas a atender, ábrelo y déjalo sin cupos.
               </p>
             ) : (
               <>
@@ -458,7 +518,7 @@ export default function HorarioAdmin() {
                 {slots.length > 0 && !nuevo && (
                   confirmar === 'dia' ? (
                     <ConfirmarBorrado
-                      texto={`¿Borrar los ${slots.length} ${slots.length === 1 ? 'cupo' : 'cupos'} de ${etiquetaDia(dia).toLowerCase()}?`}
+                      texto={`¿Borrar los ${slots.length} ${slots.length === 1 ? 'cupo' : 'cupos'} del ${fechaLarga(fechaSel)}?`}
                       onCancelar={() => setConfirmar(null)} onBorrar={borrarDia} />
                   ) : (
                     <button onClick={() => setConfirmar('dia')}
@@ -472,19 +532,19 @@ export default function HorarioAdmin() {
           </section>
         )}
 
-        {/* ── Borrar toda la semana ── */}
-        {!cargando && totalSemana > 0 && (
-          confirmar === 'semana' ? (
+        {/* ── Borrar todo el mes ── */}
+        {!cargando && totalMes > 0 && (
+          confirmar === 'mes' ? (
             <div className="glass-card">
               <ConfirmarBorrado
-                texto={`¿Borrar los ${totalSemana} cupos de toda la semana?`}
-                onCancelar={() => setConfirmar(null)} onBorrar={borrarSemana} />
+                texto={`¿Borrar los ${totalMes} cupos de ${MESES[mesVista.mes].toLowerCase()}?`}
+                onCancelar={() => setConfirmar(null)} onBorrar={borrarMes} />
             </div>
           ) : (
-            <button onClick={() => setConfirmar('semana')}
+            <button onClick={() => setConfirmar('mes')}
                     className="w-full flex items-center justify-center gap-2 rounded-[14px] min-h-[48px] text-[13px] font-semibold text-red-300/85 active:scale-[0.99] transition-transform"
                     style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.22)' }}>
-              <Trash2 size={15} /> Borrar todos los cupos de la semana
+              <Trash2 size={15} /> Borrar todos los cupos de {MESES[mesVista.mes].toLowerCase()}
             </button>
           )
         )}

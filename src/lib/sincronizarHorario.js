@@ -1,9 +1,9 @@
 import { supabase } from './supabase'
-import { ordenarDesdeHoy, aplicarCitas, libresDe } from './horario'
+import { aplicarCitas, libresFila } from './horario'
 
 // Mantiene el horario público al día con las citas: ocupa los cupos que tienen
-// cita y libera los que la perdieron. Corre en cola para que dos cambios
-// seguidos de citas no se pisen.
+// cita, libera los que la perdieron y borra los de fechas pasadas. Corre en cola
+// para que dos cambios seguidos de citas no se pisen.
 let cola = Promise.resolve()
 
 export function sincronizarHorario(userId, citas) {
@@ -22,13 +22,14 @@ async function sincronizar(userId, citas) {
   if (error) throw error
   if (!data?.length) return
 
-  const dias = ordenarDesdeHoy(data.map(d => ({ ...d, slots: Array.isArray(d.slots) ? d.slots : [] })))
-  const cambios = dias.map(d => aplicarCitas(d, citas)).filter(Boolean)
+  const cambios = data
+    .map(f => aplicarCitas({ ...f, slots: Array.isArray(f.slots) ? f.slots : [] }, citas))
+    .filter(Boolean)
 
-  await Promise.all(cambios.map(d =>
+  await Promise.all(cambios.map(f =>
     supabase.from('disponibilidad')
-      .update({ slots: d.slots, cupos: libresDe(d), updated_at: new Date().toISOString() })
-      .eq('id', d.id)
+      .update({ slots: f.slots, cupos: libresFila(f), updated_at: new Date().toISOString() })
+      .eq('id', f.id)
       .then(({ error: e }) => { if (e) throw e })
   ))
 }
