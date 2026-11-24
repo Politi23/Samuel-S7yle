@@ -161,51 +161,66 @@ function PanelReservar({ clientes, onCliente, onNombre, onCerrar, guardando, ini
   const encontrados = q.length >= 2
     ? clientes.filter(c => normal(`${c.nombre} ${c.apellido}`).includes(q) || (digitos.length >= 3 && (c.telefono || '').replace(/\D/g, '').includes(digitos))).slice(0, 5)
     : []
-  const nombreLibre = texto.replace(/[0-9]/g, '').trim()
+  const nombreLibre = texto.replace(/[0-9]/g, '').replace(/\s+/g, ' ').trim()
+  const hayNombre = /[a-zA-ZáéíóúÁÉÍÓÚñÑ]{2}/.test(nombreLibre)
+  // Enter o el botón principal guardan lo escrito
+  const guardarEscrito = (e) => { e?.preventDefault(); if (hayNombre) onNombre(nombreLibre) }
+
   return (
-    <div className="mt-2 rounded-[12px] p-3 space-y-2" style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line-strong)' }}>
+    <form onSubmit={guardarEscrito} className="mt-2 rounded-[12px] p-3 space-y-2"
+          style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line-strong)' }}>
       <p className="text-white text-sm font-bold">¿Quién reservó?</p>
       <div className="relative">
         <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/45 pointer-events-none" />
         <input autoFocus className="glass-input" style={{ paddingLeft: 38 }} value={texto} maxLength={60}
-               onChange={e => setTexto(e.target.value)} placeholder="Buscar cliente o escribir un nombre…"
-               aria-label="Buscar cliente o escribir un nombre" />
+               onChange={e => setTexto(e.target.value)} placeholder="Busca un cliente o escribe un nombre"
+               aria-label="Buscar cliente o escribir un nombre" enterKeyHint="done" />
       </div>
+
       {encontrados.length > 0 && (
-        <ul>
-          {encontrados.map((c, idx) => (
-            <li key={c.id} style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
-              <button type="button" disabled={guardando} onClick={() => onCliente(c)}
-                      className="w-full flex items-center gap-3 px-1 py-2.5 text-left active:opacity-70 disabled:opacity-50">
-                <span className="flex-1 min-w-0">
-                  <span className="block text-white text-sm font-semibold truncate">{c.nombre} {c.apellido}</span>
-                  <span className="block text-white/50 text-xs">{c.telefono || 'Sin teléfono'}</span>
-                </span>
-                <span className="text-amber-300 text-xs font-bold">Reservar</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="text-white/50 text-[11px] font-semibold pt-1">Clientes de la app</p>
+          <ul>
+            {encontrados.map((c, idx) => (
+              <li key={c.id} style={idx ? { borderTop: '1px solid var(--line)' } : undefined}>
+                <button type="button" disabled={guardando} onClick={() => onCliente(c)}
+                        className="w-full flex items-center gap-3 px-1 py-2.5 text-left active:opacity-70 disabled:opacity-50">
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-white text-sm font-semibold truncate">{c.nombre} {c.apellido}</span>
+                    <span className="block text-white/50 text-xs">{c.telefono || 'Sin teléfono'}</span>
+                  </span>
+                  <span className="text-amber-300 text-xs font-bold">Elegir</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
-      {/[a-zA-ZáéíóúÁÉÍÓÚñÑ]{2}/.test(nombreLibre) && (
-        <button type="button" onClick={() => onNombre(nombreLibre)}
-                className="w-full px-1 py-2 text-left text-sm text-white/75 active:opacity-70"
-                style={encontrados.length ? { borderTop: '1px solid var(--line)' } : undefined}>
-          Reservar a «<span className="text-white font-semibold">{nombreLibre}</span>» (no está registrado)
-        </button>
-      )}
+
       <div className="flex gap-2 pt-1">
-        <button type="button" onClick={() => onNombre(null)}
-                className="flex-1 rounded-[10px] min-h-[42px] text-[13px] font-bold text-white/80"
-                style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line-strong)' }}>
-          Ocupado sin nombre
-        </button>
+        {hayNombre ? (
+          <button type="submit" className="glass-btn-primary flex-[2]" style={{ minHeight: 44, padding: '10px 12px', fontSize: 14 }}>
+            <span className="truncate">Guardar «{nombreLibre}»</span>
+          </button>
+        ) : (
+          <button type="button" onClick={() => onNombre(null)}
+                  className="flex-[2] rounded-[10px] min-h-[44px] text-[13px] font-bold text-white/80"
+                  style={{ background: 'rgba(255,244,222,0.05)', border: '1px solid var(--line-strong)' }}>
+            Ocupado sin nombre
+          </button>
+        )}
         <button type="button" onClick={onCerrar}
-                className="flex-1 rounded-[10px] min-h-[42px] text-[13px] font-bold text-white/60">
+                className="flex-1 rounded-[10px] min-h-[44px] text-[13px] font-bold text-white/60">
           Cancelar
         </button>
       </div>
-    </div>
+      {hayNombre && (
+        <p className="text-white/45 text-[11px]">
+          {encontrados.length ? 'Si es uno de los clientes de arriba, elígelo para que quede su cita. ' : ''}
+          El nombre escrito solo lo ves tú.
+        </p>
+      )}
+    </form>
   )
 }
 
