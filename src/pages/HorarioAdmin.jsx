@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import PageHeader from '../components/PageHeader'
 import {
-  DIAS, DIAS_CORTOS, MESES, hoy, ordenSemana, filaDeFecha, vistaDia,
+  DIAS, DIAS_CORTOS, MESES, hoy, sumarDias, ordenSemana, filaDeFecha, vistaDia, proximosDias,
   reemplazarFecha, etiquetaDia, fechaLarga, fmtHora, ordenarSlots, validarSlots, validarFila,
   yaPaso, estaOcupado, marcarOcupado, aplicarCitas, libresDe, libresFila, aMinutos, deMinutos,
 } from '../lib/horario'
@@ -150,6 +150,41 @@ function Calendario({ mesVista, onMes, filas, fechaSel, onElegir, puedeAtras, pu
   )
 }
 
+/* ── Tira de la semana: los próximos 7 días ──────────────────── */
+function SemanaTira({ filas, fechaSel, onElegir }) {
+  const dias = proximosDias(filas, 7)
+  return (
+    <div className="grid grid-cols-7 gap-1.5" role="tablist" aria-label="Próximos 7 días">
+      {dias.map(d => {
+        const sel = d.fecha === fechaSel
+        const total = d.slots.filter(s => !yaPaso(d, s)).length
+        const n = libresDe(d)
+        const etiqueta = d.relativo === 0 ? 'Hoy' : d.relativo === 1 ? 'Mañana' : DIAS_CORTOS[ordenSemana(d.fecha)]
+        return (
+          <button key={d.fecha} role="tab" aria-selected={sel} onClick={() => onElegir(d.fecha)}
+                  aria-label={`${fechaLarga(d.fecha)}${!d.abierto ? ', cerrado' : total ? `, ${n} libres` : ', sin cupos'}`}
+                  className="flex flex-col items-center justify-center gap-1 rounded-[12px] py-2.5 min-h-[64px] transition-colors duration-150"
+                  style={{
+                    background: sel ? 'rgba(201,162,74,0.16)' : 'rgba(255,244,222,0.035)',
+                    border: `1px solid ${sel ? 'rgba(201,162,74,0.55)' : 'var(--line)'}`,
+                  }}>
+            <span className="text-[11px] font-bold leading-none" style={{ color: sel ? '#e2c98a' : 'rgba(247,242,232,0.70)' }}>
+              {etiqueta}
+            </span>
+            <span className="text-[11px] leading-none" style={{ color: 'rgba(247,242,232,0.45)' }}>
+              {Number(d.fecha.slice(8))}
+            </span>
+            <span className="text-[14px] font-extrabold leading-none"
+                  style={{ color: !d.abierto || !total ? 'rgba(247,242,232,0.35)' : n > 0 ? '#f7f2e8' : '#fca5a5' }}>
+              {!d.abierto ? '—' : n}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ── Página ──────────────────────────────────────────────────── */
 export default function HorarioAdmin() {
   const toast = useToast()
@@ -162,7 +197,17 @@ export default function HorarioAdmin() {
   const [estados, setEstados]     = useState({})
   const [editando, setEditando]   = useState(null)
   const [nuevo, setNuevo]         = useState(null) // { inicio, fin, error } mientras agrega un cupo
-  const [confirmar, setConfirmar] = useState(null) // 'dia' | 'mes' mientras pide confirmación
+  const [confirmar, setConfirmar] = useState(null) // 'dia' | 'periodo' mientras pide confirmación
+  const [modo, setModo] = useState(() => {
+    try { return localStorage.getItem('horario_modo') === 'mes' ? 'mes' : 'semana' } catch { return 'semana' }
+  })
+  const cambiarModo = (m) => {
+    setModo(m)
+    setConfirmar(null)
+    try { localStorage.setItem('horario_modo', m) } catch { /* sin almacenamiento local */ }
+    // En la semana solo se ven los próximos 7 días: si la fecha elegida está más lejos, volver a hoy
+    if (m === 'semana' && fechaSel > sumarDias(hoy(), 6)) setFechaSel(hoy())
+  }
 
   const citasRef    = useRef(citas)
   const pendientes  = useRef({})
@@ -307,17 +352,24 @@ export default function HorarioAdmin() {
     toast(`Cupos del ${fechaLarga(fechaSel)} borrados`, 'success')
   }
 
-  // Todos los cupos del mes que se está viendo (desde hoy)
+  // Todos los cupos del período que se está viendo: los próximos 7 días o el mes
   const prefijoMes = claveMes(mesVista)
-  const totalMes = filasVista.reduce((n, f) => n + f.slots.filter(s => (s.dia_fecha || '').startsWith(prefijoMes) && s.dia_fecha >= hoy()).length, 0)
-  const borrarMes = () => {
+  const finSemana = sumarDias(hoy(), 6)
+  const enPeriodo = (s) => {
+    const f = s.dia_fecha || ''
+    if (f < hoy()) return false
+    return modo === 'semana' ? f <= finSemana : f.startsWith(prefijoMes)
+  }
+  const nombrePeriodo = modo === 'semana' ? 'la semana' : MESES[mesVista.mes].toLowerCase()
+  const totalPeriodo = filasVista.reduce((n, f) => n + f.slots.filter(enPeriodo).length, 0)
+  const borrarPeriodo = () => {
     filasVista.forEach(f => {
-      const quedan = f.slots.filter(s => !((s.dia_fecha || '').startsWith(prefijoMes) && s.dia_fecha >= hoy()))
+      const quedan = f.slots.filter(s => !enPeriodo(s))
       if (quedan.length !== f.slots.length) guardarCambio({ ...f, slots: quedan })
     })
     setConfirmar(null)
     setNuevo(null)
-    toast(`Cupos de ${MESES[mesVista.mes].toLowerCase()} borrados`, 'success')
+    toast(`Cupos de ${nombrePeriodo} borrados`, 'success')
   }
 
   const compartir = async () => {
@@ -359,12 +411,28 @@ export default function HorarioAdmin() {
       <div className="px-4 pt-4 pb-8 space-y-4">
 
         <p className="text-white/55 text-[13px] leading-relaxed">
-          Elige un día del calendario y agrega sus cupos; puedes planificar el mes completo. Se guarda solo, las citas ocupan su cupo y los días que ya pasaron se borran solos.
+          Elige un día y agrega sus cupos. En <span className="text-white/80 font-semibold">Mes</span> puedes planificar el mes completo. Se guarda solo, las citas ocupan su cupo y los días que ya pasaron se borran solos.
         </p>
 
-        {/* ── Calendario ── */}
+        {/* ── Semana | Mes ── */}
+        <div className="flex rounded-[12px] p-1" role="tablist" aria-label="Ver por semana o por mes"
+             style={{ background: 'rgba(255,244,222,0.04)', border: '1px solid var(--line)' }}>
+          {[['semana', 'Semana'], ['mes', 'Mes']].map(([v, l]) => (
+            <button key={v} role="tab" aria-selected={modo === v} onClick={() => cambiarModo(v)}
+                    className="flex-1 py-2 rounded-[9px] text-sm font-bold transition-colors duration-150"
+                    style={{
+                      background: modo === v ? 'rgba(201,162,74,0.20)' : 'transparent',
+                      color: modo === v ? '#e2c98a' : 'rgba(247,242,232,0.55)',
+                    }}>
+              {l}
+            </button>
+          ))}
+        </div>
+
         {cargando ? (
-          <div className="glass-card h-[340px]" />
+          <div className="glass-card" style={{ height: modo === 'mes' ? 340 : 72 }} />
+        ) : modo === 'semana' ? (
+          <SemanaTira filas={filasVista} fechaSel={fechaSel} onElegir={elegirFecha} />
         ) : (
           <Calendario mesVista={mesVista} onMes={moverMes} filas={filasVista}
                       fechaSel={fechaSel} onElegir={elegirFecha}
@@ -532,19 +600,19 @@ export default function HorarioAdmin() {
           </section>
         )}
 
-        {/* ── Borrar todo el mes ── */}
-        {!cargando && totalMes > 0 && (
-          confirmar === 'mes' ? (
+        {/* ── Borrar toda la semana o todo el mes ── */}
+        {!cargando && totalPeriodo > 0 && (
+          confirmar === 'periodo' ? (
             <div className="glass-card">
               <ConfirmarBorrado
-                texto={`¿Borrar los ${totalMes} cupos de ${MESES[mesVista.mes].toLowerCase()}?`}
-                onCancelar={() => setConfirmar(null)} onBorrar={borrarMes} />
+                texto={`¿Borrar los ${totalPeriodo} cupos de ${nombrePeriodo}?`}
+                onCancelar={() => setConfirmar(null)} onBorrar={borrarPeriodo} />
             </div>
           ) : (
-            <button onClick={() => setConfirmar('mes')}
+            <button onClick={() => setConfirmar('periodo')}
                     className="w-full flex items-center justify-center gap-2 rounded-[14px] min-h-[48px] text-[13px] font-semibold text-red-300/85 active:scale-[0.99] transition-transform"
                     style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.22)' }}>
-              <Trash2 size={15} /> Borrar todos los cupos de {MESES[mesVista.mes].toLowerCase()}
+              <Trash2 size={15} /> Borrar todos los cupos de {nombrePeriodo}
             </button>
           )
         )}
